@@ -1,0 +1,51 @@
+
+Lmod is automatically replacing "intel/2020.1.217" with "gcc/9.3.0".
+
+
+Activating Modules:
+  1) CCconfig                 3) gentoo/2020          5) ucx/1.8.0
+  2) flexiblascore/.3.0.4     4) libfabric/1.10.1
+
+The following have been reloaded with a version change:
+  1) StdEnv/2016.4 => StdEnv/2020           5) mii/1.1.1 => mii/1.1.2
+  2) gcccore/.5.4.0 => gcccore/.9.3.0       6) openmpi/2.1.1 => openmpi/4.0.3
+  3) imkl/11.3.4.258 => imkl/2020.1.217     7) r/3.5.0 => r/4.3.1
+  4) java/1.8.0_121 => java/13.0.2
+
+[cac032:92607] [[59263,0],0] ORTE_ERROR_LOG: Data unpack had inadequate space in file util/show_help.c at line 513
+--------------------------------------------------------------------------
+The library attempted to open the following supporting CUDA libraries,
+but each of them failed.  CUDA-aware support is disabled.
+libcuda.so.1: cannot open shared object file: No such file or directory
+libcuda.dylib: cannot open shared object file: No such file or directory
+/usr/lib64/libcuda.so.1: cannot open shared object file: No such file or directory
+/usr/lib64/libcuda.dylib: cannot open shared object file: No such file or directory
+If you are not interested in CUDA-aware support, then run with
+--mca opal_warn_on_missing_libcuda 0 to suppress this message.  If you are interested
+in CUDA-aware support, then try setting LD_LIBRARY_PATH to the location
+of libcuda.so.1 to get passed this issue.
+--------------------------------------------------------------------------
+MTP loaded from test.pot
+	batch_size = 9999
+	swap_limit = 0
+	weight_scaling = 2
+	energy_weight = 1.000000
+	force_weight = 0.000000
+	init_value = 0.000001
+	site_en_weight = 0.000000
+	stress_weight = 0.000000
+	threshold = 1.001000
+Selection: loading state from "test.pot"
+Selection: loaded the following weights:
+	energy_weight = 1.000000
+	force_weight = 0.000000
+	stress_weight = 0.000000
+	site_en_weight = 0.000000
+
+Selection: loading state complete.
+Training set loaded from ./mtpTest.cfg
+1 configurations selected from training set
+Loading and selection of candidates completed
+Training set was increased by 1 configurations
+[cac032:92607] 1 more process has sent help message help-mpi-common-cuda.txt / dlopen failed
+[cac032:92607] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages

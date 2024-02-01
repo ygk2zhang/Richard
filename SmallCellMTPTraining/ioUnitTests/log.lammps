@@ -1,0 +1,48 @@
+LAMMPS (23 Jun 2022 - Update 2)
+WARNING: Using I/O redirection is unreliable with parallel runs. Better use -in switch to read input file. (../lammps.cpp:530)
+units            metal
+dimension        3
+boundary         p p p
+
+
+atom_style       atomic
+lattice          bcc 8
+Lattice spacing in x,y,z = 8 8 8
+region           whole block 0 1 0 2 0 3 units lattice
+create_box       1  whole
+Created orthogonal box = (0 0 0) to (8 16 24)
+  1 by 1 by 3 MPI processor grid
+create_atoms     1 region whole
+Created 12 atoms
+  using lattice units in orthogonal box = (0 0 0) to (8 16 24)
+  create_atoms CPU = 0.000 seconds
+mass             1 39.0983
+
+pair_style mlip      load_from=./test.pot extrapolation_control=true threshold_save=2.1 threshold_break=10  extrapolation_control:save_extrapolative_to=preselected.cfg
+pair_coeff * *
+
+neighbor	0.5 bin
+neigh_modify    every 1 delay 5 check yes
+
+timestep	0.001
+
+fix		1 all nve
+fix		2 all langevin 600 600 0.1 826234 zero yes
+
+thermo_style    custom step temp
+thermo 1000
+
+
+run             100000
+Neighbor list info ...
+  update every 1 steps, delay 5 steps, check yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 7.5
+  ghost atom cutoff = 7.5
+  binsize = 3.75, bins = 3 5 7
+  1 neighbor lists, perpetual/occasional/extra = 1 0 0
+  (1) pair mlip, perpetual
+      attributes: full, newton on
+      pair build: full/bin/atomonly
+      stencil: full/bin/3d
+      bin: standard

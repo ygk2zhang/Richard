@@ -1,0 +1,50 @@
+LAMMPS (23 Jun 2022 - Update 2)
+WARNING: Using I/O redirection is unreliable with parallel runs. Better use -in switch to read input file. (../lammps.cpp:530)
+Lattice spacing in x,y,z = 8 8 8
+Created orthogonal box = (0 0 0) to (8 16 24)
+  1 by 1 by 3 MPI processor grid
+Created 12 atoms
+  using lattice units in orthogonal box = (0 0 0) to (8 16 24)
+  create_atoms CPU = 0.000 seconds
+Wrapper initialization
+	abinitio = false
+	calculate_efs = true
+	check_errors = false
+	extrapolation_control = true
+	fit = false
+	lotf = false
+	mlip = true
+	select = false
+	write_cfgs = false
+	write_cfgs:skip = 0
+	mlip:load_from = ./test.pot
+MLIP type is non-linear MTP
+Selection: loading state from "./test.pot"
+Selection: loaded the following weights:
+	energy_weight = 1.000000
+	force_weight = 0.000000
+	stress_weight = 0.000000
+	site_en_weight = 0.000000
+
+Selection: loading state complete.
+	add_grade_feature = true
+	threshold_break = 10.000000
+	threshold_save = 2.100000
+	save_extrapolative_to = preselected.cfg
+Wrapper initialization complete
+Neighbor list info ...
+  update every 1 steps, delay 5 steps, check yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 7.5
+  ghost atom cutoff = 7.5
+  binsize = 3.75, bins = 3 5 7
+  1 neighbor lists, perpetual/occasional/extra = 1 0 0
+  (1) pair mlip, perpetual
+      attributes: full, newton on
+      pair build: full/bin/atomonly
+      stencil: full/bin/3d
+      bin: standard
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 0
+  Time step     : 0.001

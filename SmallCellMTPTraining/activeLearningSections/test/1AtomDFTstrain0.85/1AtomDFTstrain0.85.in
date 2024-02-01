@@ -1,0 +1,39 @@
+&control
+    disk_io = 'none',
+    prefix = 'strainK',
+    calculation ='scf',
+    outdir = '/global/home/hpc5146/Projects/SmallCellMTPTraining/SmallCellMTPTraining/activeLearning/test/1AtomDFTstrain0.85',
+    pseudo_dir = '/global/home/hpc5146'
+    tstress = .true.
+    tprnfor = .true.
+ /
+ &system
+    ibrav=0,
+    nat=1,
+    ntyp=1,
+    ecutwfc=60,
+    occupations='smearing',
+    smearing = 'gaussian',
+    degauss = 0.01,
+ /
+ &electrons
+    mixing_mode='plain',
+    diagonalization='david',
+/
+ &ions
+    ion_dynamics = 'bfgs'
+ /
+
+CELL_PARAMETERS (bohr)
+4.245521 4.245522 4.245523
+-4.245524 4.245525 4.245526
+-4.245527 -4.245528 4.245529
+
+ATOMIC_SPECIES
+K  39.0983 K.pbe-spn-kjpaw_psl.1.0.0.UPF
+
+ATOMIC_POSITIONS (angstrom)
+K  0   0   0
+
+K_POINTS automatic
+8 8 8 0 0 0
