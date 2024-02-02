@@ -2,10 +2,13 @@ import os
 import numpy as np
 import regex as re
 import subprocess
+import math
 
 
 from SmallCellMTPTraining.templates import templates as templates
+from SmallCellMTPTraining.templates import properties as properties
 from SmallCellMTPTraining.io import writers as wr
+from SmallCellMTPTraining.io import parsers as pa
 
 
 def generateInitialDataset(inputFolder: str, outputFolder: str, params: dict):
@@ -57,7 +60,15 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, params: dict):
         # Make modifications to the QE input using regex substitutions
         content = re.sub(
             "\$aaa",
-            str(round(strain * params["baseLatticeParameter"] / 2, 5)),
+            str(
+                round(
+                    strain
+                    * params["baseLatticeParameter"]
+                    / 2
+                    / properties.distanceConversion,
+                    5,
+                )
+            ),
             templates.atomStrainTemplate,
         )  # substitute lattice vector marker with the lattice vector
         content = re.sub("\$pseudo_dir", params["pseudopotentialDirectory"], content)
@@ -78,7 +89,6 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, params: dict):
         subprocesses.append(subprocess.Popen(["sbatch", jobFile]))
 
     exitCodes = [p.wait() for p in subprocesses]
-    print(exitCodes)
     return exitCodes
 
     # for shear in DFT1AtomShears:
@@ -207,6 +217,57 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, params: dict):
     #     exit(1)
 
     # printAndLog("Initial generation of DFT training dataset has completed.")
+
+
+def calculateDiffConfigs(
+    inputFolder: str,
+    outputFolder: str,
+    diffFile: str,
+    i: int,
+    iter: int,
+    config: dict,
+):
+    newConfigs = pa.parsePartialMTPConfigsFile(diffFile)
+    cellDimensions = config["mdLatticeConfigs"][i]
+    kPoints = [math.ceil(config["baseKPoints"] / x) for x in cellDimensions]
+    subprocesses = []
+
+    for j, newConfig in enumerate(newConfigs):
+        identifier = (
+            "".join(str(x) for x in cellDimensions) + "I" + str(iter) + "N" + str(j)
+        )
+        workingFolder = os.path.join(inputFolder, identifier)
+        os.mkdir(workingFolder)
+        qeFile = os.path.join(workingFolder, identifier + ".in")
+        runFile = os.path.join(workingFolder, identifier + ".run")
+        outFile = os.path.join(outputFolder, identifier + ".out")
+        jobFile = os.path.join(workingFolder, identifier + ".qsub")
+
+        qeProperties = {
+            "atomPositions": newConfig["atomPositions"],
+            "superCell": newConfig["superCell"],
+            "ecutrho": config["ecutrho"],
+            "ecutwfc": config["ecutwfc"],
+            "qeOutDir": workingFolder,
+            "kPoints": kPoints,
+        }
+
+        jobProperties = {
+            "jobName": identifier,
+            "ncpus": config["qeCPUsPerConfig"][i],
+            "memPerCpu": config["qeMemPerConfig"][i],
+            "maxDuration": config["qeTimePerConfig"][i],
+            "inFile": qeFile,
+            "outFile": outFile,
+            "runFile": runFile,
+        }
+
+        wr.writeQEInput(qeFile, qeProperties)
+        wr.writeQEJob(jobFile, jobProperties)
+        subprocesses.append(subprocess.Popen(["sbatch", jobFile]))
+
+    exitCodes = [p.wait() for p in subprocesses]
+    return exitCodes
 
 
 if __name__ == "__main__":

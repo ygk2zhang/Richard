@@ -22,7 +22,7 @@ def parseQEOutput(fileName: str, convertToAngRy=True) -> dict:
         # Check for completion:
         if re.search(r"stopping...", content):
             print(fileName + " has failed!!")
-            return {"jobComplete": "False"}
+            return {"jobComplete": False}
 
         # Get the configuration energy
         energy = (
@@ -133,6 +133,7 @@ def parseQEOutput(fileName: str, convertToAngRy=True) -> dict:
         if len(time) == 2:
             cpuTimeSpent = time[0] * 60 + time[1]
         return {
+            "jobComplete": True,
             "energy": energy,
             "atomIDs": atomIDs,
             "atomTypes": atomTypes,
@@ -153,6 +154,7 @@ def parseMTPConfig(startIndex: int, fileLines: list, convertFromAngRy=True) -> d
         energyConversion = distanceConversion = 1
 
     numAtoms = int(fileLines[startIndex + 2].split()[0])
+
     energy = float(fileLines[startIndex + 9 + numAtoms].split()[0]) * energyConversion
 
     v1 = np.array(fileLines[startIndex + 4].split(), dtype=float)  # Read supercell
@@ -204,10 +206,51 @@ def parseAllQEInDirectory(dirName: str, convertFromAngRy=True) -> list:
     qeOutputs = []
     for filename in sorted(os.listdir(dirName)):
         if filename.endswith(".out"):
-            qeOutputs.append(
-                parseQEOutput(os.path.join(dirName, filename), convertFromAngRy)
-            )
+            output = parseQEOutput(os.path.join(dirName, filename), convertFromAngRy)
+            if output["jobComplete"] == False:
+                os.remove(os.path.abspath(filename))
+            else:
+                qeOutputs.append(output)
+
     return qeOutputs
+
+
+def parsePartialMTPConfig(startIndex: int, fileLines: list) -> dict:
+    numAtoms = int(fileLines[startIndex + 2].split()[0])
+
+    v1 = np.array(fileLines[startIndex + 4].split(), dtype=float)  # Read supercell
+    v2 = np.array(fileLines[startIndex + 5].split(), dtype=float)
+    v3 = np.array(fileLines[startIndex + 6].split(), dtype=float)
+    superCellVectors = np.array([v1, v2, v3])
+
+    infoArray = np.zeros((numAtoms, 5))
+
+    for j in range(numAtoms):
+        infoArray[j] = np.array(fileLines[startIndex + 8 + j].split(), dtype=float)
+
+    atomIDs = infoArray[:, 0]
+    atomTypes = infoArray[:, 1]
+    atomPositions = infoArray[:, 2:5]
+
+    return {
+        "numAtoms": numAtoms,
+        "atomIDs": atomIDs,
+        "atomTypes": atomTypes,
+        "atomPositions": atomPositions,
+        "superCell": superCellVectors,
+    }
+
+
+def parsePartialMTPConfigsFile(filename: str) -> list:
+    properties = []
+    with open(filename, "r") as txtfile:
+        fileLines = txtfile.readlines()
+        indicies = np.where(np.array(fileLines) == "BEGIN_CFG\n")[
+            0
+        ]  # Seach for indicies which match the beginning of a configuration
+        for i in indicies:
+            properties.append(parsePartialMTPConfig(i, fileLines))
+    return properties
 
 
 if __name__ == "__main__":

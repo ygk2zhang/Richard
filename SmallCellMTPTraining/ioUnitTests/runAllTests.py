@@ -181,7 +181,7 @@ module load    quantumespresso/6.6
 
 cd .
 
-mpirun --oversubscribe -np 3 pw.x < test.test > ./test.testes
+pw.x < test.test > ./test.testes
 """
     )
 
@@ -294,7 +294,7 @@ def testWriteTrainJob():
 module load       StdEnv/2020  gcc/9.3.0  cuda/11.2.2
 module load openmpi/4.0.3
 
-mpirun -np 3 --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train test.pot ./mtpTest.cfg --iteration_limit=10000 --tolerance=0.000001 --init_random=true
+mpirun -np 3 --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train ./test.pot ./mtpTest.cfg --iteration_limit=10000 --tolerance=0.000001 --init_random=true
 """
     )
 
@@ -330,9 +330,34 @@ def testWriteSelectJob():
 module load       StdEnv/2020  gcc/9.3.0  cuda/11.2.2
 module load openmpi/4.0.3
 
-mpirun -np 3 --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp select_add test.pot ./mtpTest.cfg ./preselected.cfg ./diff.cfg
+mpirun -np 3 --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp select_add ./test.pot ./mtpTest.cfg ./preselected.cfg ./diff.cfg
 """
     )
+
+
+def testParsePartialMTPFile():
+    out = pa.parsePartialMTPConfigsFile("./partial.cfg")[0]
+    assert out["numAtoms"] == 2
+    for x, y in zip(out["atomIDs"], [1, 2]):
+        assert x == y
+    for x, y in zip(out["atomTypes"], [0, 0]):
+        assert x == y
+    for x, y in zip(
+        out["atomPositions"],
+        [[0, 0, 0], [1.510940, 2.510940, 3.510940]],
+    ):
+        for i, j in zip(x, y):
+            assert pytest.approx(i) == j
+    for x, y in zip(
+        out["superCell"],
+        [
+            [5.021881, 0, 0],
+            [0, 5.021881, 0],
+            [0, 0, 5.021881],
+        ],
+    ):
+        for i, j in zip(x, y):
+            assert i == j
 
 
 if __name__ == "__main__":
@@ -343,6 +368,7 @@ if __name__ == "__main__":
     # testWriteMDJob()
     # testWriteMDInput()
     # testWriteTrainJob()
-    testWriteSelectJob()
+    # testWriteSelectJob()
+    # testParsePartialMTPFile()
 
     pass

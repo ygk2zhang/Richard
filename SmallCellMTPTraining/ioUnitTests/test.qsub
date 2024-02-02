@@ -14,4 +14,4 @@
 module load       StdEnv/2020  gcc/9.3.0  cuda/11.2.2
 module load openmpi/4.0.3
 
-mpirun -np 3 --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp select_add test.pot ./mtpTest.cfg ./preselected.cfg ./diff.cfg
+mpirun -np 3 --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp select_add ./test.pot ./mtpTest.cfg ./preselected.cfg ./diff.cfg

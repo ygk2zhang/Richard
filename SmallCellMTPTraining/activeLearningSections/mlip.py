@@ -1,14 +1,17 @@
 import os
 import subprocess
+import regex as re
+import numpy as np
 
 from SmallCellMTPTraining.io import writers as wr
 
 
 def trainMTP(jobFile: str, logsFolder: str, potFile: str, trainingFIle: str):
+    runFile = os.path.join(logsFolder, "train.out")
     jobProperties = {
         "jobName": "train",
         "ncpus": 12,
-        "runFile": os.path.join(logsFolder, "train.out"),
+        "runFile": runFile,
         "maxDuration": "0-2:00",
         "memPerCpu": "2G",
         "potFile": potFile,
@@ -17,7 +20,17 @@ def trainMTP(jobFile: str, logsFolder: str, potFile: str, trainingFIle: str):
     }
 
     wr.writeTrainJob(jobFile, jobProperties)
-    return subprocess.Popen(["sbatch", jobFile]).wait()
+    subprocess.Popen(["sbatch", jobFile]).wait()
+
+    with open(runFile, "r") as txtfile:
+        lines = txtfile.readlines()
+        for i, line in enumerate(lines):
+            if line == "Energy per atom:\n":
+                avgEnergyError = lines[i + 3][31:-1]
+            if line == "Forces:\n":
+                avgForceError = lines[i + 3][31:-1]
+
+    return avgEnergyError, avgForceError
 
 
 def selectDiffConfigs(
@@ -29,9 +42,9 @@ def selectDiffConfigs(
     diffFile: str,
 ):
     jobProperties = {
-        "jobName": "selectADD",
+        "jobName": "selectAdd",
         "ncpus": 2,
-        "runFile": os.path.join(logsFolder, "train.out"),
+        "runFile": os.path.join(logsFolder, "selectAdd.out"),
         "maxDuration": "0-1:00",
         "memPerCpu": "6G",
         "potFile": potFile,
@@ -40,5 +53,16 @@ def selectDiffConfigs(
         "diffFile": diffFile,
     }
 
-    wr.writeTrainJob(jobFile, jobProperties)
-    return subprocess.Popen(["sbatch", jobFile]).wait()
+    wr.writeSelectJob(jobFile, jobProperties)
+    subprocess.Popen(["sbatch", jobFile]).wait()
+
+    with open(diffFile, "r") as f:
+        content = f.read()
+        preselectedGrades = list(
+            map(float, re.findall(r"(?<=MV_grade\t)\d+.?\d*", content))
+        )
+        return (
+            len(preselectedGrades),
+            np.mean(preselectedGrades),
+            np.max(preselectedGrades),
+        )

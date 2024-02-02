@@ -229,9 +229,7 @@ def writeTrainJob(fileName: str, jobProperties: dict):
     newTrainJob = re.sub(r"\$time", jobProperties["maxDuration"], newTrainJob)
     newTrainJob = re.sub(r"\$runFile", jobProperties["runFile"], newTrainJob)
     newTrainJob = re.sub(r"\$mem", jobProperties["memPerCpu"], newTrainJob)
-    newTrainJob = re.sub(
-        r"\$pot", os.path.basename(jobProperties["potFile"]), newTrainJob
-    )
+    newTrainJob = re.sub(r"\$pot", jobProperties["potFile"], newTrainJob)
     newTrainJob = re.sub(r"\$train", jobProperties["trainFile"], newTrainJob)
     newTrainJob = re.sub(r"\$init", jobProperties["initRandom"], newTrainJob)
 
@@ -269,9 +267,7 @@ def writeSelectJob(fileName: str, jobProperties: dict):
     newSelectJob = re.sub(r"\$time", jobProperties["maxDuration"], newSelectJob)
     newSelectJob = re.sub(r"\$runFile", jobProperties["runFile"], newSelectJob)
     newSelectJob = re.sub(r"\$mem", jobProperties["memPerCpu"], newSelectJob)
-    newSelectJob = re.sub(
-        r"\$pot", os.path.basename(jobProperties["potFile"]), newSelectJob
-    )
+    newSelectJob = re.sub(r"\$pot", jobProperties["potFile"], newSelectJob)
     newSelectJob = re.sub(r"\$train", jobProperties["trainFile"], newSelectJob)
     newSelectJob = re.sub(
         r"\$preselected", jobProperties["preselectedFile"], newSelectJob
