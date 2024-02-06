@@ -223,18 +223,19 @@ def calculateDiffConfigs(
     inputFolder: str,
     outputFolder: str,
     diffFile: str,
-    i: int,
-    iter: int,
+    attempt: str,
+    stage: int,
+    iteration: int,
     config: dict,
 ):
     newConfigs = pa.parsePartialMTPConfigsFile(diffFile)
-    cellDimensions = config["mdLatticeConfigs"][i]
+    cellDimensions = config["mdLatticeConfigs"][stage]
     kPoints = [math.ceil(config["baseKPoints"] / x) for x in cellDimensions]
     subprocesses = []
 
     for j, newConfig in enumerate(newConfigs):
         identifier = (
-            "".join(str(x) for x in cellDimensions) + "I" + str(iter) + "N" + str(j)
+            str(attempt) + "_" + str(stage) + "_" + str(iteration) + "_" + str(j)
         )
         workingFolder = os.path.join(inputFolder, identifier)
         os.mkdir(workingFolder)
@@ -254,9 +255,9 @@ def calculateDiffConfigs(
 
         jobProperties = {
             "jobName": identifier,
-            "ncpus": config["qeCPUsPerConfig"][i],
-            "memPerCpu": config["qeMemPerConfig"][i],
-            "maxDuration": config["qeTimePerConfig"][i],
+            "ncpus": config["qeCPUsPerConfig"][stage],
+            "memPerCpu": config["qeMemPerConfig"][stage],
+            "maxDuration": config["qeTimePerConfig"][stage],
             "inFile": qeFile,
             "outFile": outFile,
             "runFile": runFile,
@@ -267,7 +268,17 @@ def calculateDiffConfigs(
         subprocesses.append(subprocess.Popen(["sbatch", jobFile]))
 
     exitCodes = [p.wait() for p in subprocesses]
-    return exitCodes
+
+    cpuTimesSpent = []
+    for j, newConfig in enumerate(newConfigs):
+        identifier = (
+            str(attempt) + "_" + str(stage) + "_" + str(iteration) + "_" + str(j)
+        )
+        outFile = os.path.join(outputFolder, identifier + ".out")
+        qeOutput = pa.parseQEOutput(outFile)
+        cpuTimesSpent.append(qeOutput["cpuTimeSpent"])
+
+    return exitCodes, cpuTimesSpent
 
 
 if __name__ == "__main__":

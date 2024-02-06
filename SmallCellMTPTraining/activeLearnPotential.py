@@ -49,15 +49,20 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
     masterPreselectedFile = os.path.join(mtpFolder, "preselected.cfg")
     diffFile = os.path.join(mtpFolder, "diff.cfg")
 
-    wr.printAndLog(logFile, "=======================================================")
-    wr.printAndLog(logFile, "Starting New Potential Active Learning Process !!!")
-    wr.printAndLog(logFile, "=======================================================")
+    # Used for tags are restarting runs
+    attempt = 1
+    startingStage = 0
+    startingIter = 0
 
-    ### ===== Initalization of the base training set =====
+    ### ===== Determine if we are continuing a existing run by reading the DFT Archive =====
+    existingArchiveFolders = sorted(
+        os.listdir(dftArchiveFolder)
+    )  # We sort the strings alphabetically
+
     # Only generate a new initial dataset if there aren't existing dft files
-
-    if len(os.listdir(dftArchiveFolder)) == 0:
-        wr.printAndLog(logFile, "Generating Inital Dataset.")
+    if len(existingArchiveFolders) == 0:
+        ### ===== Initalization of the base training set =====
+        wr.printAndLog(logFile, "Generating Initial Dataset.")
         initalizationExitCodes = generateInitialDataset(
             dftInputsFolder, dftOutputsFolder, config
         )
@@ -68,9 +73,26 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
             trainingFile, dftOutputsFolder, dftArchiveFolder, "baseline", config
         )
         wr.printAndLog(logFile, "Completed Inital Dataset Generation.")
+    # Otherwise, we are continuing a run, and we should parse where we were
+    elif (
+        len(existingArchiveFolders) == 1
+    ):  # This only happens if we fail right after the baseline
+        attempt += 1
+    else:
+        latestArchiveFolder = existingArchiveFolders[-2]  # [-1] is the baseline folder
+        attempt, startingStage, startingIter = tuple(
+            map(int, latestArchiveFolder.split("_"))
+        )  # Extract
+        attempt += 1
+        startingIter += 1
+
+    wr.printAndLog(logFile, "=======================================================")
+    wr.printAndLog(
+        logFile, "Starting Active Learning Process !!! Attempt: " + str(attempt)
+    )
+    wr.printAndLog(logFile, "=======================================================")
 
     ### ===== Prepare Active Learning Loop =====
-
     # Read the breadth of the parallel training runs
     cellDimensionsList = config["mdLatticeConfigs"]
     temperatures = config["mdTemperatures"]
@@ -79,25 +101,33 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
     )
 
     # ### ===== Begin Active Learning Loop =====
-    for i, cellDimensions in enumerate(
-        cellDimensionsList
+    for stage, cellDimensions in enumerate(
+        cellDimensionsList[startingStage:]
     ):  # Iterate over all the configuration level
         # Iterate until we stop seeing preselcted configurations for the level
-        for iter in range(config["maxItersPerConfig"][i]):
+        for iteration in range(startingIter, config["maxItersPerConfig"][stage], 1):
+
+            if not startingIter == 0:  # Clear the startingIter after setting it once
+                startingIter = 0
+
             wr.printAndLog(
                 logFile,
-                "Entering " + str(cellDimensions) + "; iteration " + str(i) + ".",
+                "Entering "
+                + str(cellDimensions)
+                + "; iteration "
+                + str(iteration)
+                + ".",
             )
 
             ### ===== Train the MTP ====
-            wr.printAndLog(logFile, "Starting Training Iteration.")
+            wr.printAndLog(logFile, "Starting Training Stage.")
             avgEnergyError, avgForceError = trainMTP(
                 os.path.join(logsFolder, "train.qsub"),
                 logsFolder,
                 potFile,
                 trainingFile,
             )
-            wr.printAndLog(logFile, "Training Iteration Completed.")
+            wr.printAndLog(logFile, "Training Stage Completed.")
             wr.printAndLog(logFile, "Average Energy Per Atom Error: " + avgEnergyError)
             wr.printAndLog(logFile, "Average Force Per Atom Error: " + avgForceError)
 
@@ -111,7 +141,7 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
             ) = performParallelMDRuns(
                 temperatures,
                 strains,
-                i,
+                stage,
                 mdRunsFolder,
                 potFile,
                 masterPreselectedFile,
@@ -126,7 +156,7 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
             preselectedLogs.append(preselectedIterationLogs)
             wr.printAndLog(
                 logFile,
-                "Completed MD Runs. Average Extrapolation Grade By Temp: "
+                "Completed MD Runs. Average Extrapolation Grade By Temperature: "
                 + str(temperatureAverageGrades),
             )
 
@@ -144,17 +174,37 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
                 logFile,
                 str(diffCount)
                 + " New Configurations Found.     Average Grade: "
-                + str(meanGrade)
+                + str(round(meanGrade, 2))
                 + "    Max Grade: "
-                + str(maxGrade),
+                + str(round(maxGrade, 2)),
             )
             os.remove(masterPreselectedFile)
 
-            ### ===== Calculate the Needed Configurations Using Quantum Espresso ====
-            calculateDiffConfigs(
-                dftInputsFolder, dftOutputsFolder, diffFile, i, iter, config
+            ### ===== Calculate the Needed Configurations Using Quantum Espresso =====
+            qeExitCodes, cpuTimesSpent = calculateDiffConfigs(
+                dftInputsFolder,
+                dftOutputsFolder,
+                diffFile,
+                attempt,
+                stage,
+                iteration,
+                config,
             )
-            wr.printAndLog(logFile, "DFT Calculations Complete")
+            wr.printAndLog(
+                logFile,
+                "DFT Calculations Complete.\tTotal CPU seconds spent this iteration: "
+                + str(np.sum(cpuTimesSpent))
+                + "s.\tLimiting CPU time: "
+                + str(np.max(cpuTimesSpent))
+                + "s.",
+            )
+            ### ===== Clean up the DFT outputs by putting them into the archive =====
+            compileTrainingConfigurations(
+                trainingFile,
+                dftOutputsFolder,
+                dftArchiveFolder,
+                str(attempt) + "_" + str(stage) + "_" + str(iteration),
+                config,
+            )
 
-            exit()
             pass
