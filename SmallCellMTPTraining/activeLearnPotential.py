@@ -55,9 +55,7 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
     startingIter = 0
 
     ### ===== Determine if we are continuing a existing run by reading the DFT Archive =====
-    existingArchiveFolders = sorted(
-        os.listdir(dftArchiveFolder)
-    )  # We sort the strings alphabetically
+    existingArchiveFolders = os.listdir(dftArchiveFolder)
     # Only generate a new initial dataset if there aren't existing dft files
     if len(existingArchiveFolders) == 0:
         ### ===== Initialization of the base training set =====
@@ -79,10 +77,25 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
     ):  # This only happens if we fail right after the baseline
         attempt += 1
     else:
-        latestArchiveFolder = existingArchiveFolders[-2]  # [-1] is the baseline folder
-        attempt, startingStage, startingIter = tuple(
-            map(int, latestArchiveFolder.split("_"))
-        )  # Extract
+        # In order to extract where to resume the runs from, we parse the dft archive
+        attempt, startingStage, startingIter = 0, 0, 0
+        maxScore = 0
+        for archive in existingArchiveFolders:
+            if archive == "baseline":
+                continue
+            vec = tuple(map(int, archive.split("_")))
+            score = (
+                vec[0] * 1e6 + vec[1] * 1e3 + vec[2] * 1000
+            )  # We calculate a score based on the importance of the measure
+
+            # Store the archive with the attempt, state, and iteration that has the highest score
+            if score > maxScore:
+                attempt, startingStage, startingIter = tuple(
+                    map(int, archive.split("_"))
+                )  # Extract
+                maxScore = score
+
+        # Increment these by one to continue form where we left off
         attempt += 1
         startingIter += 1
 
@@ -107,6 +120,7 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
         cellDimensions = cellDimensionsList[stage]
         # Iterate until we stop seeing preselcted configurations for the level
         for iteration in range(startingIter, config["maxItersPerConfig"][stage], 1):
+
             if not startingIter == 0:  # Clear the startingIter after setting it once
                 startingIter = 0
 

@@ -50,9 +50,10 @@ def parseQEOutput(fileName: str, convertToAngRy=True) -> dict:
 
         # Get the atom position vectors
         positionVectorsStrings = re.findall(
-            r"\d           K   tau\(   \d*\) = \(\s*-?\d*\.?\d*\s*-?\d*\.?\d*\s*-?\d*\.?\d*  \)",
+            r"\d\s*K   tau\(\s+\d+\) = \(\s*-?\d*\.?\d*\s*-?\d*\.?\d*\s*-?\d*\.?\d*  \)",
             content,
         )
+        print(positionVectorsStrings)
         positionVectorsFloats = np.array(
             [extractAllNumbersFromString(x) for x in positionVectorsStrings]
         )[:, 2:]
@@ -141,7 +142,6 @@ def parseQEOutput(fileName: str, convertToAngRy=True) -> dict:
 
             time = np.array(cpuTimeSpentString.split("h"), dtype=float)
             cpuTimeSpent = time[0] * 3600 + time[1] * 60
-            print(cpuTimeSpent)
 
         return {
             "jobComplete": True,

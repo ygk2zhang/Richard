@@ -6,6 +6,8 @@ import SmallCellMTPTraining.io.writers as wr
 
 def testParseQEDir():
     out = pa.parseAllQEInDirectory("./", False)[0]
+    out2 = pa.parseAllQEInDirectory("./", False)[1]
+    assert len(out2["atomPositions"]) == 16
     # print(out)
     assert out["energy"] == -226.03075955
     assert out["pressure"] == 0.42
