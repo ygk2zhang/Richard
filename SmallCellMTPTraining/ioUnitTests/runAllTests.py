@@ -361,7 +361,7 @@ def testParsePartialMTPFile():
 
 
 if __name__ == "__main__":
-    # testParseQEDir()
+    testParseQEDir()
     # testParseMTPFIle()
     # testWriteQEInput()
     # testWriteQEJob()

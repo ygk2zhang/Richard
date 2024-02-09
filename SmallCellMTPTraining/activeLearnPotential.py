@@ -58,21 +58,21 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
     existingArchiveFolders = sorted(
         os.listdir(dftArchiveFolder)
     )  # We sort the strings alphabetically
-
     # Only generate a new initial dataset if there aren't existing dft files
     if len(existingArchiveFolders) == 0:
-        ### ===== Initalization of the base training set =====
+        ### ===== Initialization of the base training set =====
         wr.printAndLog(logFile, "Generating Initial Dataset.")
-        initalizationExitCodes = generateInitialDataset(
+        initializationExitCodes = generateInitialDataset(
             dftInputsFolder, dftOutputsFolder, config
         )
-        if bool(sum(initalizationExitCodes)):
+        if bool(sum(initializationExitCodes)):
             wr.printAndLog(logFile, "Initial DFT has failed. Exiting....")
             exit(1)
         compileTrainingConfigurations(
             trainingFile, dftOutputsFolder, dftArchiveFolder, "baseline", config
         )
-        wr.printAndLog(logFile, "Completed Inital Dataset Generation.")
+        wr.printAndLog(logFile, "Completed Initial Dataset Generation.")
+
     # Otherwise, we are continuing a run, and we should parse where we were
     elif (
         len(existingArchiveFolders) == 1
@@ -101,12 +101,12 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
     )
 
     # ### ===== Begin Active Learning Loop =====
-    for stage, cellDimensions in enumerate(
-        cellDimensionsList[startingStage:]
+    for stage in range(
+        startingStage, len(cellDimensionsList), 1
     ):  # Iterate over all the configuration level
+        cellDimensions = cellDimensionsList[stage]
         # Iterate until we stop seeing preselcted configurations for the level
         for iteration in range(startingIter, config["maxItersPerConfig"][stage], 1):
-
             if not startingIter == 0:  # Clear the startingIter after setting it once
                 startingIter = 0
 
@@ -148,12 +148,13 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
                 config,
             )
             if not hasPreselected:
+                preselectedLogs.append(preselectedIterationLogs)
                 wr.printAndLog(
                     logFile,
                     "No Preselected Found. Going to Next Lattice Configuration.",
                 )
                 break
-            preselectedLogs.append(preselectedIterationLogs)
+
             wr.printAndLog(
                 logFile,
                 "Completed MD Runs. Average Extrapolation Grade By Temperature: "
@@ -193,9 +194,9 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
             wr.printAndLog(
                 logFile,
                 "DFT Calculations Complete.\tTotal CPU seconds spent this iteration: "
-                + str(np.sum(cpuTimesSpent))
+                + str(round(np.sum(cpuTimesSpent), 2))
                 + "s.\tLimiting CPU time: "
-                + str(np.max(cpuTimesSpent))
+                + str(round(np.max(cpuTimesSpent), 2))
                 + "s.",
             )
             ### ===== Clean up the DFT outputs by putting them into the archive =====

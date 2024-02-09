@@ -103,10 +103,7 @@ def parseQEOutput(fileName: str, convertToAngRy=True) -> dict:
         v2 = np.array(fileLines[index + 2].split(), dtype=float)
         v3 = np.array(fileLines[index + 3].split(), dtype=float)
         stressVectors = (
-            np.array([v1, v2, v3])[:, :3]
-            * V
-            * energyConversion
-            / distanceConversion**3
+            np.array([v1, v2, v3])[:, :3] * V * energyConversion / distanceConversion**3
         )
 
         # Get the PlusStress
@@ -125,13 +122,27 @@ def parseQEOutput(fileName: str, convertToAngRy=True) -> dict:
         )[0]
 
         # Get the cpuTimeSpent
-        cpuTimeSpentString = re.findall(r"\d*m?\s?\d+.\d+s CPU", fileLines[timeIndex])[
-            0
-        ]
-        time = np.array(cpuTimeSpentString[:-5].split("m"), dtype=float)
-        cpuTimeSpent = time[-1]
-        if len(time) == 2:
-            cpuTimeSpent = time[0] * 60 + time[1]
+        cpuTimeSpent = 0
+
+        cpuTimeSpentString = re.findall(r"\d*m?\s?\d+.\d+s CPU", fileLines[timeIndex])
+        if (
+            len(cpuTimeSpentString) == 1
+        ):  # This case covers when the cpu time is less than 1h
+            cpuTimeSpentString = cpuTimeSpentString[0]
+            time = np.array(cpuTimeSpentString[:-5].split("m"), dtype=float)
+            cpuTimeSpent = time[-1]
+            if len(time) == 2:
+                cpuTimeSpent = time[0] * 60 + time[1]
+
+        else:
+            cpuTimeSpentString = re.findall(
+                r"\d+h\s?\d*(?=m CPU)", fileLines[timeIndex]
+            )[0]
+
+            time = np.array(cpuTimeSpentString.split("h"), dtype=float)
+            cpuTimeSpent = time[0] * 3600 + time[1] * 60
+            print(cpuTimeSpent)
+
         return {
             "jobComplete": True,
             "energy": energy,
