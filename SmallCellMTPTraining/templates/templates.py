@@ -40,8 +40,8 @@ qeJobTemplate = """#!/bin/bash
 #SBATCH --partition=reserved
 #SBATCH --qos=privileged
 #SBATCH --nodes=1
-#SBATCH --ntasks=$cpus
-#SBATCH --cpus-per-task=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=$cpus
 #SBATCH --job-name=$jobName
 #SBATCH --output=$runFile
 #SBATCH --mem-per-cpu=$mem
@@ -123,7 +123,7 @@ trainJobTemplate = """#!/bin/bash
 module load       StdEnv/2020  gcc/9.3.0  cuda/11.2.2
 module load openmpi/4.0.3
 
-mpirun -np $cpus --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train $pot $train --iteration_limit=10000 --tolerance=0.000001 --init_random=$init
+mpirun -np $cpus --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train $pot $train --iteration_limit=10000 --tolerance=0.000001 --init_random=$init --al_mode=nbh
 """
 
 selectJobTemplate = """#!/bin/bash

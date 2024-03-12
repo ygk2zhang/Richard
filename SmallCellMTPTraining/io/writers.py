@@ -51,7 +51,7 @@ def writeQEInput(fileName: str, taskProperties: dict) -> str:
     atomPositionsString = []
     for a in np.arange(numAtoms):
         atomPositionsString.append(
-            " K %f %f %f 0 0 0  \n"
+            " K %f %f %f \n"
             % (
                 taskProperties["atomPositions"][a][0],
                 taskProperties["atomPositions"][a][1],

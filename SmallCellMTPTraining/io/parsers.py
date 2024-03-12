@@ -237,7 +237,7 @@ def parsePartialMTPConfig(startIndex: int, fileLines: list) -> dict:
     infoArray = np.zeros((numAtoms, 5))
 
     for j in range(numAtoms):
-        infoArray[j] = np.array(fileLines[startIndex + 8 + j].split(), dtype=float)
+        infoArray[j] = np.array(fileLines[startIndex + 8 + j].split(), dtype=float)[:5]
 
     atomIDs = infoArray[:, 0]
     atomTypes = infoArray[:, 1]
