@@ -53,7 +53,7 @@ def parseQEOutput(fileName: str, convertToAngRy=True) -> dict:
             r"\d\s*K   tau\(\s+\d+\) = \(\s*-?\d*\.?\d*\s*-?\d*\.?\d*\s*-?\d*\.?\d*  \)",
             content,
         )
-        print(positionVectorsStrings)
+        # print(positionVectorsStrings)
         positionVectorsFloats = np.array(
             [extractAllNumbersFromString(x) for x in positionVectorsStrings]
         )[:, 2:]

@@ -48,6 +48,7 @@ qeJobTemplate = """#!/bin/bash
 #SBATCH --time=$time # time (DD-HH:MM)
 #SBATCH --wait
 
+module load    cuda/11.6.1
 module load    StdEnv/2020  gcc/9.3.0  openmpi/4.0.3
 module load    quantumespresso/6.6
 
@@ -69,7 +70,8 @@ mdJobTemplate = """#!/bin/bash
 #SBATCH --time=$time # time (DD-HH:MM)
 #SBATCH --wait
 
-module load       StdEnv/2020  gcc/9.3.0  cuda/11.2.2
+module load    cuda/11.6.1
+module load       StdEnv/2020  gcc/9.3.0
 module load openmpi/4.0.3
 
 cd $folder
@@ -120,7 +122,8 @@ trainJobTemplate = """#!/bin/bash
 #SBATCH --time=$time # time (DD-HH:MM)
 #SBATCH --wait
 
-module load       StdEnv/2020  gcc/9.3.0  cuda/11.2.2
+module load    cuda/11.6.1
+module load       StdEnv/2020  gcc/9.3.0
 module load openmpi/4.0.3
 
 mpirun -np $cpus --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train $pot $train --iteration_limit=10000 --tolerance=0.000001 --init_random=$init --al_mode=nbh
@@ -139,7 +142,8 @@ selectJobTemplate = """#!/bin/bash
 #SBATCH --time=$time # time (DD-HH:MM)
 #SBATCH --wait
 
-module load       StdEnv/2020  gcc/9.3.0  cuda/11.2.2
+module load    cuda/11.6.1
+module load       StdEnv/2020  gcc/9.3.0
 module load openmpi/4.0.3
 
 mpirun -np $cpus --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp select_add $pot $train $preselected $diff

@@ -85,7 +85,7 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
                 continue
             vec = tuple(map(int, archive.split("_")))
             score = (
-                vec[0] * 1e6 + vec[1] * 1e3 + vec[2] * 1000
+                vec[0] * 1e6 + vec[1] * 1e3 + vec[2]
             )  # We calculate a score based on the importance of the measure
 
             # Store the archive with the attempt, state, and iteration that has the highest score

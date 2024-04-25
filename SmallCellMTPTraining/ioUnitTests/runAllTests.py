@@ -7,6 +7,12 @@ import SmallCellMTPTraining.io.writers as wr
 def testParseQEDir():
     out = pa.parseAllQEInDirectory("./", False)[0]
     out2 = pa.parseAllQEInDirectory("./", False)[1]
+    out3 = pa.parseAllQEInDirectory("./", False)[2]
+
+    print(out["cpuTimeSpent"])
+    print(out2["cpuTimeSpent"])
+    print(out3["cpuTimeSpent"])
+
     assert len(out2["atomPositions"]) == 16
     # print(out)
     assert out["energy"] == -226.03075955
@@ -143,8 +149,8 @@ CELL_PARAMETERS (angstrom)
 ATOMIC_SPECIES
 K  39.0983 K.pbe-spn-kjpaw_psl.1.0.0.UPF
 ATOMIC_POSITIONS (angstrom)
-    K 0.040362 -0.019418 -0.010229 0 0 0  
-  K 2.523439 2.583219 2.574030 0 0 0  
+    K 0.040362 -0.019418 -0.010229 
+  K 2.523439 2.583219 2.574030 
 
 K_POINTS automatic
 3 3 3 0 0 0
@@ -170,14 +176,15 @@ def testWriteQEJob():
 #SBATCH --partition=reserved
 #SBATCH --qos=privileged
 #SBATCH --nodes=1
-#SBATCH --ntasks=3
-#SBATCH --cpus-per-task=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=3
 #SBATCH --job-name=test
 #SBATCH --output=./test.run
 #SBATCH --mem-per-cpu=4G
 #SBATCH --time=0-0:03 # time (DD-HH:MM)
 #SBATCH --wait
 
+module load    cuda/11.6.1
 module load    StdEnv/2020  gcc/9.3.0  openmpi/4.0.3
 module load    quantumespresso/6.6
 
@@ -214,7 +221,8 @@ def testWriteMDJob():
 #SBATCH --time=0-0:03 # time (DD-HH:MM)
 #SBATCH --wait
 
-module load       StdEnv/2020  gcc/9.3.0  cuda/11.2.2
+module load    cuda/11.6.1
+module load       StdEnv/2020  gcc/9.3.0
 module load openmpi/4.0.3
 
 cd .
@@ -293,10 +301,11 @@ def testWriteTrainJob():
 #SBATCH --time=0-0:03 # time (DD-HH:MM)
 #SBATCH --wait
 
-module load       StdEnv/2020  gcc/9.3.0  cuda/11.2.2
+module load    cuda/11.6.1
+module load       StdEnv/2020  gcc/9.3.0
 module load openmpi/4.0.3
 
-mpirun -np 3 --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train ./test.pot ./mtpTest.cfg --iteration_limit=10000 --tolerance=0.000001 --init_random=true
+mpirun -np 3 --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train ./test.pot ./mtpTest.cfg --iteration_limit=10000 --tolerance=0.000001 --init_random=true --al_mode=nbh
 """
     )
 
@@ -329,7 +338,8 @@ def testWriteSelectJob():
 #SBATCH --time=0-0:03 # time (DD-HH:MM)
 #SBATCH --wait
 
-module load       StdEnv/2020  gcc/9.3.0  cuda/11.2.2
+module load    cuda/11.6.1
+module load       StdEnv/2020  gcc/9.3.0
 module load openmpi/4.0.3
 
 mpirun -np 3 --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp select_add ./test.pot ./mtpTest.cfg ./preselected.cfg ./diff.cfg
