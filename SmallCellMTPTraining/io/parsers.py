@@ -270,6 +270,26 @@ def parsePartialMTPConfigsFile(filename: str) -> list:
     return properties
 
 
+def parseTimeFile(filename: str) -> float:
+    with open(filename, "r") as f:
+        return float(f.read())
+
+
+def parseMDTime(filename: str) -> float:
+    """Extracts the time from a file with the given filename."""
+
+    with open(filename, "r") as f:
+        lines = f.readlines()
+
+    pattern = r"Total wall time:\s*(\d+):(\d+):(\d+)"
+    for line in lines:
+        match = re.search(pattern, line)
+        if match:
+            hours, minutes, seconds = map(int, match.groups())
+            total_seconds = (hours * 60 * 60) + (minutes * 60) + seconds
+            return total_seconds
+
+
 if __name__ == "__main__":
     print(
         parseMTPConfigsFile(

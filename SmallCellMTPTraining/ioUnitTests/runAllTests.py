@@ -281,6 +281,7 @@ def testWriteTrainJob():
         "jobName": "test",
         "ncpus": 3,
         "runFile": "./test.run",
+        "timeFile": "./test.time",
         "maxDuration": "0-0:03",
         "memPerCpu": "4G",
         "potFile": "./test.pot",
@@ -307,7 +308,7 @@ module load    cuda/11.6.1
 module load       StdEnv/2020  gcc/9.3.0
 module load openmpi/4.0.3
 
-mpirun -np 3 --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train ./test.pot ./mtpTest.cfg --iteration_limit=10000 --tolerance=0.000001 --init_random=true --al_mode=nbh
+/usr/bin/time -o ./test.time -f "%e" mpirun -np 3 --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train ./test.pot ./mtpTest.cfg --iteration_limit=10000 --tolerance=0.000001 --init_random=true --al_mode=nbh
 """
     )
 
@@ -317,6 +318,7 @@ def testWriteSelectJob():
         "jobName": "test",
         "ncpus": 3,
         "runFile": "./test.run",
+        "timeFile": "./test.time",
         "maxDuration": "0-0:03",
         "memPerCpu": "4G",
         "potFile": "./test.pot",
@@ -344,7 +346,7 @@ module load    cuda/11.6.1
 module load       StdEnv/2020  gcc/9.3.0
 module load openmpi/4.0.3
 
-mpirun -np 3 --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp select_add ./test.pot ./mtpTest.cfg ./preselected.cfg ./diff.cfg
+/usr/bin/time -o ./test.time -f "%e" mpirun -np 3 --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp select_add ./test.pot ./mtpTest.cfg ./preselected.cfg ./diff.cfg
 """
     )
 
@@ -374,8 +376,13 @@ def testParsePartialMTPFile():
             assert i == j
 
 
+def testParseTime():
+    assert pa.parseTimeFile("timeReport.txt") == pytest.approx(0.54)
+    assert (pa.parseMDTime("sampleMD.txt")) == pytest.approx(56 * 60 + 16)
+
+
 if __name__ == "__main__":
-    testParseQEDir()
+    # testParseQEDir()
     # testParseMTPFIle()
     # testWriteQEInput()
     # testWriteQEJob()
@@ -384,5 +391,6 @@ if __name__ == "__main__":
     # testWriteTrainJob()
     # testWriteSelectJob()
     # testParsePartialMTPFile()
+    # testParseTime()
 
     pass

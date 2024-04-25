@@ -5,6 +5,7 @@ import regex as re
 import numpy as np
 
 import SmallCellMTPTraining.io.writers as wr
+import SmallCellMTPTraining.io.parsers as pa
 
 
 def performParallelMDRuns(
@@ -68,6 +69,7 @@ def performParallelMDRuns(
 
     preselectedIterationLogs = {}
     temperatureGrades = {temperature: [] for temperature in temperatures}
+    cpuTimesSpent = []
 
     for temperature in temperatures:
         for strain in strains:
@@ -80,6 +82,10 @@ def performParallelMDRuns(
             )
             workingFolder = os.path.join(mdFolder, identifier)
             preselectedFile = os.path.join(workingFolder, "preselected.cfg.0")
+
+            # Record the time spent
+            outFile = os.path.join(workingFolder, identifier + ".out")
+            cpuTimesSpent.append(pa.parseMDTime(outFile))
 
             preselectedGrades = []
 
@@ -105,4 +111,10 @@ def performParallelMDRuns(
         if len(temperatureGrade) > 0:
             temperatureAverageGrades[temperature] = round(np.mean(temperatureGrade), 2)
 
-    return exitCodes, preselectedIterationLogs, temperatureAverageGrades, hasPreselected
+    return (
+        exitCodes,
+        preselectedIterationLogs,
+        temperatureAverageGrades,
+        hasPreselected,
+        cpuTimesSpent,
+    )

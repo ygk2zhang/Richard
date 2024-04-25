@@ -135,13 +135,16 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
 
             ### ===== Train the MTP ====
             wr.printAndLog(logFile, "Starting Training Stage.")
-            avgEnergyError, avgForceError = trainMTP(
+            avgEnergyError, avgForceError, trainingTime = trainMTP(
                 os.path.join(logsFolder, "train.qsub"),
                 logsFolder,
                 potFile,
                 trainingFile,
             )
-            wr.printAndLog(logFile, "Training Stage Completed.")
+            wr.printAndLog(
+                logFile,
+                "Training Stage Complete; Wall Time: " + str(trainingTime) + "s",
+            )
             wr.printAndLog(logFile, "Average Energy Per Atom Error: " + avgEnergyError)
             wr.printAndLog(logFile, "Average Force Per Atom Error: " + avgForceError)
 
@@ -152,6 +155,7 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
                 preselectedIterationLogs,
                 temperatureAverageGrades,
                 hasPreselected,
+                mdCPUTimesSpent,
             ) = performParallelMDRuns(
                 temperatures,
                 strains,
@@ -160,6 +164,14 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
                 potFile,
                 masterPreselectedFile,
                 config,
+            )
+            wr.printAndLog(
+                logFile,
+                "MD Calculations Complete.\tTotal CPU seconds spent this iteration: "
+                + str(round(np.sum(mdCPUTimesSpent), 2))
+                + "s.\tLimiting CPU time: "
+                + str(round(np.max(mdCPUTimesSpent), 2))
+                + "s.",
             )
             if not hasPreselected:
                 preselectedLogs.append(preselectedIterationLogs)
@@ -177,13 +189,16 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
 
             ### ===== Select the needed configurations =====
             wr.printAndLog(logFile, "Selecting New Configurations.")
-            diffCount, meanGrade, maxGrade = selectDiffConfigs(
+            diffCount, meanGrade, maxGrade, selectTime = selectDiffConfigs(
                 os.path.join(logsFolder, "selectAdd.qsub"),
                 logsFolder,
                 potFile,
                 trainingFile,
                 masterPreselectedFile,
                 diffFile,
+            )
+            wr.printAndLog(
+                logFile, "Selection Completed; Wall time: " + str(selectTime) + "s"
             )
             wr.printAndLog(
                 logFile,
@@ -196,7 +211,7 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
             os.remove(masterPreselectedFile)
 
             ### ===== Calculate the Needed Configurations Using Quantum Espresso =====
-            qeExitCodes, cpuTimesSpent = calculateDiffConfigs(
+            qeExitCodes, dftCPUTimesSpent = calculateDiffConfigs(
                 dftInputsFolder,
                 dftOutputsFolder,
                 diffFile,
@@ -208,9 +223,9 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
             wr.printAndLog(
                 logFile,
                 "DFT Calculations Complete.\tTotal CPU seconds spent this iteration: "
-                + str(round(np.sum(cpuTimesSpent), 2))
+                + str(round(np.sum(dftCPUTimesSpent), 2))
                 + "s.\tLimiting CPU time: "
-                + str(round(np.max(cpuTimesSpent), 2))
+                + str(round(np.max(dftCPUTimesSpent), 2))
                 + "s.",
             )
             ### ===== Clean up the DFT outputs by putting them into the archive =====

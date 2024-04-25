@@ -126,7 +126,7 @@ module load    cuda/11.6.1
 module load       StdEnv/2020  gcc/9.3.0
 module load openmpi/4.0.3
 
-mpirun -np $cpus --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train $pot $train --iteration_limit=10000 --tolerance=0.000001 --init_random=$init --al_mode=nbh
+/usr/bin/time -o $timeFile -f "%e" mpirun -np $cpus --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train $pot $train --iteration_limit=10000 --tolerance=0.000001 --init_random=$init --al_mode=nbh
 """
 
 selectJobTemplate = """#!/bin/bash
@@ -146,7 +146,7 @@ module load    cuda/11.6.1
 module load       StdEnv/2020  gcc/9.3.0
 module load openmpi/4.0.3
 
-mpirun -np $cpus --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp select_add $pot $train $preselected $diff
+/usr/bin/time -o $timeFile -f "%e" mpirun -np $cpus --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp select_add $pot $train $preselected $diff
 """
 
 atomStrainTemplate = """&control

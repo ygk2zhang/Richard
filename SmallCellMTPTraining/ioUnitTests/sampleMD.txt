@@ -1,0 +1,184 @@
+LAMMPS (23 Jun 2022 - Update 2)
+Lattice spacing in x,y,z = 5.0218805 5.0218805 5.0218805
+Created orthogonal box = (0 0 0) to (15.065642 15.065642 15.065642)
+  1 by 1 by 1 MPI processor grid
+Created 54 atoms
+  using lattice units in orthogonal box = (0 0 0) to (15.065642 15.065642 15.065642)
+  create_atoms CPU = 0.000 seconds
+Wrapper initialization
+	abinitio = false
+	calculate_efs = true
+	check_errors = false
+	extrapolation_control = true
+	fit = false
+	lotf = false
+	mlip = true
+	select = false
+	write_cfgs = false
+	write_cfgs:skip = 0
+	mlip:load_from = /global/home/hpc5146/Projects/nbhMode/nbh18_2/mtp/pot.almtp
+MLIP type is non-linear MTP
+Selection: loading state from "/global/home/hpc5146/Projects/nbhMode/nbh18_2/mtp/pot.almtp"
+Selection: loaded the following weights:
+	energy_weight = 0.000000
+	force_weight = 0.000000
+	stress_weight = 0.000000
+	site_en_weight = 1.000000
+
+Selection: loading state complete.
+	add_grade_feature = true
+	threshold_break = 10.000000
+	threshold_save = 2.100000
+	save_extrapolative_to = preselected.cfg
+Wrapper initialization complete
+Neighbor list info ...
+  update every 1 steps, delay 5 steps, check yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 7.5
+  ghost atom cutoff = 7.5
+  binsize = 3.75, bins = 5 5 5
+  1 neighbor lists, perpetual/occasional/extra = 1 0 0
+  (1) pair mlip, perpetual
+      attributes: full, newton on
+      pair build: full/bin/atomonly
+      stencil: full/bin/3d
+      bin: standard
+Setting up Verlet run ...
+  Unit style    : metal
+  Current step  : 0
+  Time step     : 0.001
+Per MPI rank memory allocation (min/avg/max) = 3.063 | 3.063 | 3.063 Mbytes
+   Step          Temp     
+         0   0            
+      1000   299.83859    
+      2000   275.68528    
+      3000   314.21756    
+      4000   316.38071    
+      5000   322.82466    
+      6000   331.47096    
+      7000   307.91992    
+      8000   277.36944    
+      9000   302.75844    
+     10000   333.79452    
+     11000   245.65961    
+     12000   299.20885    
+     13000   308.78543    
+     14000   312.74393    
+     15000   316.20823    
+     16000   298.45255    
+     17000   293.65957    
+     18000   334.9885     
+     19000   316.45613    
+     20000   300.47968    
+     21000   299.49017    
+     22000   315.2387     
+     23000   327.19172    
+     24000   372.60327    
+     25000   300.58997    
+     26000   306.97741    
+     27000   301.57476    
+     28000   310.75574    
+     29000   311.22457    
+     30000   215.86631    
+     31000   273.28623    
+     32000   313.28338    
+     33000   283.89713    
+     34000   259.77345    
+     35000   341.55218    
+     36000   272.31594    
+     37000   255.82724    
+     38000   307.7183     
+     39000   311.41606    
+     40000   301.72935    
+     41000   299.13682    
+     42000   281.32266    
+     43000   286.72092    
+     44000   276.84671    
+     45000   302.59076    
+     46000   339.0445     
+     47000   286.49317    
+     48000   273.44673    
+     49000   323.16939    
+     50000   232.41677    
+     51000   390.4535     
+     52000   338.28643    
+     53000   253.22719    
+     54000   276.81316    
+     55000   312.77964    
+     56000   303.15124    
+     57000   324.01331    
+     58000   319.26268    
+     59000   304.87495    
+     60000   257.50138    
+     61000   340.07357    
+     62000   300.02671    
+     63000   278.17824    
+     64000   291.92725    
+     65000   295.35207    
+     66000   276.74785    
+     67000   298.98735    
+     68000   312.42674    
+     69000   275.60014    
+     70000   271.05521    
+     71000   330.84911    
+     72000   228.06443    
+     73000   295.62144    
+     74000   240.40355    
+     75000   324.90974    
+     76000   368.95231    
+     77000   319.63161    
+     78000   260.88583    
+     79000   318.92678    
+     80000   305.35107    
+     81000   294.8599     
+     82000   339.99653    
+     83000   367.65087    
+     84000   303.79533    
+     85000   291.66629    
+     86000   324.40658    
+     87000   315.00757    
+     88000   250.91998    
+     89000   301.17143    
+     90000   330.21807    
+     91000   317.73756    
+     92000   305.55897    
+     93000   339.46395    
+     94000   289.71985    
+     95000   280.22437    
+     96000   318.11107    
+     97000   323.63628    
+     98000   307.5317     
+     99000   341.55852    
+    100000   288.17651    
+Loop time of 3376.01 on 1 procs for 100000 steps with 54 atoms
+
+Performance: 2.559 ns/day, 9.378 hours/ns, 29.621 timesteps/s
+83.7% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 3373.1     | 3373.1     | 3373.1     |   0.0 | 99.91
+Neigh   | 0.33749    | 0.33749    | 0.33749    |   0.0 |  0.01
+Comm    | 0.62234    | 0.62234    | 0.62234    |   0.0 |  0.02
+Output  | 0.052668   | 0.052668   | 0.052668   |   0.0 |  0.00
+Modify  | 1.5786     | 1.5786     | 1.5786     |   0.0 |  0.05
+Other   |            | 0.3239     |            |       |  0.01
+
+Nlocal:             54 ave          54 max          54 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:            366 ave         366 max         366 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:              0 ave           0 max           0 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+FullNghs:         1320 ave        1320 max        1320 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 1320
+Ave neighs/atom = 24.444444
+Neighbor list builds = 3074
+Dangerous builds = 0
+Wrapper object has been destroyed
+LAMMPS-to-MLIP link has been terminated
+
+Total wall time: 0:56:16

@@ -226,6 +226,7 @@ def writeTrainJob(fileName: str, jobProperties: dict):
         r"\$cpus", str(jobProperties["ncpus"]), templates.trainJobTemplate
     )
     newTrainJob = re.sub(r"\$jobName", jobProperties["jobName"], newTrainJob)
+    newTrainJob = re.sub(r"\$timeFile", jobProperties["timeFile"], newTrainJob)
     newTrainJob = re.sub(r"\$time", jobProperties["maxDuration"], newTrainJob)
     newTrainJob = re.sub(r"\$runFile", jobProperties["runFile"], newTrainJob)
     newTrainJob = re.sub(r"\$mem", jobProperties["memPerCpu"], newTrainJob)
@@ -251,6 +252,7 @@ def writeSelectJob(fileName: str, jobProperties: dict):
         "trainFile",
         "preselectedFile",
         "diffFile",
+        "timeFile",
     ]
     """
 
@@ -264,6 +266,7 @@ def writeSelectJob(fileName: str, jobProperties: dict):
         r"\$cpus", str(jobProperties["ncpus"]), templates.selectJobTemplate
     )
     newSelectJob = re.sub(r"\$jobName", jobProperties["jobName"], newSelectJob)
+    newSelectJob = re.sub(r"\$timeFile", jobProperties["timeFile"], newSelectJob)
     newSelectJob = re.sub(r"\$time", jobProperties["maxDuration"], newSelectJob)
     newSelectJob = re.sub(r"\$runFile", jobProperties["runFile"], newSelectJob)
     newSelectJob = re.sub(r"\$mem", jobProperties["memPerCpu"], newSelectJob)
