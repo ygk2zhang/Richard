@@ -4,7 +4,7 @@ import regex as re
 import numpy as np
 
 from SmallCellMTPTraining.io import writers as wr
-from SmallCellMTPTraining.io import parser as pa
+from SmallCellMTPTraining.io import parsers as pa
 
 
 def trainMTP(jobFile: str, logsFolder: str, potFile: str, trainingFIle: str):

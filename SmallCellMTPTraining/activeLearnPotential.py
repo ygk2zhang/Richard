@@ -183,7 +183,7 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
 
             wr.printAndLog(
                 logFile,
-                "Completed MD Runs. Average Extrapolation Grade By Temperature: "
+                "Average Extrapolation Grade By Temperature: "
                 + str(temperatureAverageGrades),
             )
 

@@ -75,7 +75,7 @@ module load       StdEnv/2020  gcc/9.3.0
 module load openmpi/4.0.3
 
 cd $folder
-mpirun -np $cpus /global/home/hpc5146/interface-lammps-mlip-3/lmp_mpi < $inFile > $outFile
+/usr/bin/time -o $timeFile -f "%e" mpirun -np $cpus /global/home/hpc5146/interface-lammps-mlip-3/lmp_mpi < $inFile > $outFile
 """
 
 mdInputTemplate = """units            metal

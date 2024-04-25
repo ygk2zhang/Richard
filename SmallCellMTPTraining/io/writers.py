@@ -153,6 +153,7 @@ def writeMDJob(fileName: str, jobProperties: dict):
         "memPerCpu",
         "inFile",
         "outFile",
+        "timeFile",
     ]"""
 
     properties = props.calcJobProperties
@@ -163,6 +164,7 @@ def writeMDJob(fileName: str, jobProperties: dict):
 
     newMDJob = re.sub(r"\$cpus", str(jobProperties["ncpus"]), templates.mdJobTemplate)
     newMDJob = re.sub(r"\$jobName", jobProperties["jobName"], newMDJob)
+    newMDJob = re.sub(r"\$timeFile", jobProperties["timeFile"], newMDJob)
     newMDJob = re.sub(r"\$time", jobProperties["maxDuration"], newMDJob)
     newMDJob = re.sub(r"\$runFile", jobProperties["runFile"], newMDJob)
     newMDJob = re.sub(r"\$folder", os.path.dirname(jobProperties["inFile"]), newMDJob)

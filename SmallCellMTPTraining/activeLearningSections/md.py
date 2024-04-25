@@ -41,6 +41,7 @@ def performParallelMDRuns(
             runFile = os.path.join(workingFolder, identifier + ".run")
             outFile = os.path.join(workingFolder, identifier + ".out")
             jobFile = os.path.join(workingFolder, identifier + ".qsub")
+            timeFile = os.path.join(workingFolder, identifier + ".time")
 
             latticeParameter = config["baseLatticeParameter"] * strain
 
@@ -59,6 +60,7 @@ def performParallelMDRuns(
                 "inFile": mdFile,
                 "outFile": outFile,
                 "runFile": runFile,
+                "timeFile": timeFile,
             }
 
             wr.writeMDInput(mdFile, mdProperties)
@@ -84,8 +86,8 @@ def performParallelMDRuns(
             preselectedFile = os.path.join(workingFolder, "preselected.cfg.0")
 
             # Record the time spent
-            outFile = os.path.join(workingFolder, identifier + ".out")
-            cpuTimesSpent.append(pa.parseMDTime(outFile))
+            timeFile = os.path.join(workingFolder, identifier + ".time")
+            cpuTimesSpent.append(pa.parseTimeFile(timeFile))
 
             preselectedGrades = []
 
