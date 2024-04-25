@@ -9,11 +9,13 @@ def testParseQEDir():
     out2 = pa.parseAllQEInDirectory("./", False)[1]
     out3 = pa.parseAllQEInDirectory("./", False)[2]
 
-    print(out["cpuTimeSpent"])
-    print(out2["cpuTimeSpent"])
-    print(out3["cpuTimeSpent"])
+    assert out["cpuTimeSpent"] == pytest.approx(2 * 60 + 15.72)
+    assert out2["cpuTimeSpent"] == pytest.approx(1 * 3600 + 16 * 60)
+    assert out3["cpuTimeSpent"] == pytest.approx(1 * 24 * 3600 + 5 * 3600 + 10 * 60)
 
     assert len(out2["atomPositions"]) == 16
+    assert len(out3["atomPositions"]) == 54
+
     # print(out)
     assert out["energy"] == -226.03075955
     assert out["pressure"] == 0.42

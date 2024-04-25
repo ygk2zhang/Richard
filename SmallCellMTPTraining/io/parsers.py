@@ -122,26 +122,32 @@ def parseQEOutput(fileName: str, convertToAngRy=True) -> dict:
             re.findall(r"P=\s*-?\d\d*.?\d*", content)[0]
         )[0]
 
-        # Get the cpuTimeSpent
-        cpuTimeSpent = 0
+        cpuTimeMatchingPattern = r"""
+        PWSCF\s*:\s*  # Match "PWSCF:" with optional whitespace
+        (?:           # Start of non-capturing group for days
+        (\d+)d\s*   # Match days (optional) with "d" and optional whitespace
+        )?            # End of non-capturing group for days
+        (?:           # Start of non-capturing group for hours
+        (\d+)h\s*   # Match hours (optional) with "h" and optional whitespace
+        )?            # End of non-capturing group for hours
+        (?:           # Start of non-capturing group for minutes
+        (\d+)m\s*   # Match minutes (optional) with "m" and optional whitespace 
+        )?            # End of non-capturing group for minutes
+        (?:           # Start of non-capturing group for seconds
+        (\d+(?:\.\d+)?)s   # Match seconds (optional) with "s" and optional decimal part
+        )?            # End of non-capturing group for seconds
+        \s*CPU       # Match "CPU" with optional whitespace
+        """
+        all_matches = re.findall(cpuTimeMatchingPattern, content, re.VERBOSE)
 
-        cpuTimeSpentString = re.findall(r"\d*m?\s?\d+.\d+s CPU", fileLines[timeIndex])
-        if (
-            len(cpuTimeSpentString) == 1
-        ):  # This case covers when the cpu time is less than 1h
-            cpuTimeSpentString = cpuTimeSpentString[0]
-            time = np.array(cpuTimeSpentString[:-5].split("m"), dtype=float)
-            cpuTimeSpent = time[-1]
-            if len(time) == 2:
-                cpuTimeSpent = time[0] * 60 + time[1]
-
-        else:
-            cpuTimeSpentString = re.findall(
-                r"\d+h\s?\d*(?=m CPU)", fileLines[timeIndex]
-            )[0]
-
-            time = np.array(cpuTimeSpentString.split("h"), dtype=float)
-            cpuTimeSpent = time[0] * 3600 + time[1] * 60
+        for match in all_matches:
+            days, hours, minutes, seconds = match
+            total_seconds = (
+                (int(days or 0) * 24 * 60 * 60)
+                + (int(hours or 0) * 60 * 60)
+                + (int(minutes or 0) * 60)
+                + float(seconds or 0)
+            )
 
         return {
             "jobComplete": True,
@@ -154,7 +160,7 @@ def parseQEOutput(fileName: str, convertToAngRy=True) -> dict:
             "stressVectors": stressVectors,
             "virialStresses": virialStressFloats,
             "pressure": pressure,
-            "cpuTimeSpent": cpuTimeSpent,
+            "cpuTimeSpent": total_seconds,
         }
 
 
