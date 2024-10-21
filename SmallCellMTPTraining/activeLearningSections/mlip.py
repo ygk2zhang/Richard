@@ -7,7 +7,9 @@ from SmallCellMTPTraining.io import writers as wr
 from SmallCellMTPTraining.io import parsers as pa
 
 
-def trainMTP(jobFile: str, logsFolder: str, potFile: str, trainingFIle: str):
+def trainMTP(
+    jobFile: str, logsFolder: str, potFile: str, trainingFIle: str, config: dict
+):
     runFile = os.path.join(logsFolder, "train.out")
     timeFile = os.path.join(logsFolder, "train.time")
     jobProperties = {
@@ -15,11 +17,12 @@ def trainMTP(jobFile: str, logsFolder: str, potFile: str, trainingFIle: str):
         "ncpus": 12,
         "runFile": runFile,
         "timeFile": timeFile,
-        "maxDuration": "0-4:00",
+        "maxDuration": "0-6:00",
         "memPerCpu": "4G",
         "potFile": potFile,
         "trainFile": trainingFIle,
         "initRandom": "false",
+        "mode": config["mode"],
     }
 
     wr.writeTrainJob(jobFile, jobProperties)

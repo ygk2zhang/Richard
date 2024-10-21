@@ -140,6 +140,7 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
                 logsFolder,
                 potFile,
                 trainingFile,
+                config,
             )
             wr.printAndLog(
                 logFile,

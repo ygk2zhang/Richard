@@ -3,6 +3,7 @@ import numpy as np
 import regex as re
 import subprocess
 import math
+import time
 
 
 from SmallCellMTPTraining.templates import templates as templates
@@ -30,9 +31,9 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, params: dict):
     )
 
     jobProperties = {
-        "ncpus": 1,
-        "maxDuration": "0-0:20",
-        "memPerCpu": "4G",
+        "ncpus": 2,
+        "maxDuration": "0-1:20",
+        "memPerCpu": "10G",
     }
 
     subprocesses = []
@@ -59,14 +60,13 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, params: dict):
 
         # Make modifications to the QE input using regex substitutions
         content = re.sub(
-            "\$aaa",
+            "\$cell",
             str(
                 round(
                     strain
                     * params["baseLatticeParameter"]
-                    / 2
                     / properties.distanceConversion,
-                    5,
+                    7,
                 )
             ),
             templates.atomStrainTemplate,
@@ -266,6 +266,7 @@ def calculateDiffConfigs(
         wr.writeQEInput(qeFile, qeProperties)
         wr.writeQEJob(jobFile, jobProperties)
         subprocesses.append(subprocess.Popen(["sbatch", jobFile]))
+        time.sleep(0.1)
 
     exitCodes = [p.wait() for p in subprocesses]
 

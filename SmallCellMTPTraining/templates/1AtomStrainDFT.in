@@ -11,10 +11,11 @@
     ibrav=0,
     nat=1,
     ntyp=1,
-    ecutwfc=60,
+    ecutwfc=150,
+    ecutrho=600,
     occupations='smearing',
     smearing = 'gaussian',
-    degauss = 0.01,
+    degauss = 0.005,
  /
  &electrons
     mixing_mode='plain',
@@ -36,4 +37,4 @@ ATOMIC_POSITIONS (angstrom)
 K  0   0   0
 
 K_POINTS automatic
-8 8 8 0 0 0
+14 14 14 0 0 0

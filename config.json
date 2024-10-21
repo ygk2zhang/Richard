@@ -20,10 +20,10 @@
     "0-2:00",
     "0-4:00",
     "0-8:00",
-    "0-16:00"
+    "1-16:00"
   ],
   "mdMemPerConfig": ["4G", "4G", "4G", "4G", "4G", "4G"],
-  "mdCPUsPerConfig": [1, 1, 1, 1, 2, 4],
+  "mdCPUsPerConfig": [1, 1, 1, 1, 1, 1],
   "mdTimePerConfig": [
     "0-1:00",
     "0-1:00",
@@ -36,9 +36,10 @@
   "mdTemperatures": [100, 300, 400, 800],
   "mdStrainRange": [0.95, 1.06],
   "mdStrainStep": 0.02,
-
   "selectThreshold": 2.1,
   "breakThreshold": 10.0,
+  "mode": "cfg",
+  "includeVacancies": true,
   "mlpBinary": "/global/home/hpc5146/mlip-3/bin/mlp",
   "pseudopotentialDirectory": "/global/home/hpc5146",
   "pseudopotential": "K.pbe-spn-kjpaw_psl.1.0.0.UPF",

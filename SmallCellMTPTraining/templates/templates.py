@@ -16,7 +16,7 @@ qeInputTemplate = """
    ecutrho=$erho
    occupations='smearing',
    smearing = 'gaussian',
-   degauss = 0.01,
+   degauss = 0.005,
  /
  &electrons
    mixing_mode='plain',
@@ -97,12 +97,21 @@ neighbor	0.5 bin
 neigh_modify    every 1 delay 5 check yes
 
 timestep	0.001
-
-fix		1 all nve
-fix		2 all langevin $ttt $ttt 0.1 826234 zero yes
-
 thermo_style    custom step temp 
 thermo 1000
+
+delete_atoms random count $vvv no all NULL 12345
+
+# Hack for a quick pseudo-random seed
+variable tmr timer
+variable seed equal ceil(10000000*${tmr})
+variable rand_scale equal random(0.99,1.01,${seed}) # Random uniaxial strain +-1%
+
+fix		1 all nve
+fix     def all deform 1 y scale ${rand_scale} #Apply the random strain
+run 1 
+unfix def
+fix		2 all langevin $ttt $ttt 0.1 826234 zero yes
 
 
 run             100000
@@ -126,7 +135,7 @@ module load    cuda/11.6.1
 module load       StdEnv/2020  gcc/9.3.0
 module load openmpi/4.0.3
 
-/usr/bin/time -o $timeFile -f "%e" mpirun -np $cpus --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train $pot $train --iteration_limit=10000 --tolerance=0.000001 --init_random=$init --al_mode=nbh
+/usr/bin/time -o $timeFile -f "%e" mpirun -np $cpus --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train $pot $train --iteration_limit=10000 --tolerance=0.000001 --init_random=$init --al_mode=$mode
 """
 
 selectJobTemplate = """#!/bin/bash
@@ -159,13 +168,14 @@ atomStrainTemplate = """&control
     tprnfor = .true.
  /
  &system
-    ibrav=0,
+    ibrav=3,
+    celldm(1)=$cell
     nat=1,
     ntyp=1,
-    ecutwfc=60,
+    ecutwfc=150,
     occupations='smearing',
     smearing = 'gaussian',
-    degauss = 0.01,
+    degauss = 0.005,
  /
  &electrons
     mixing_mode='plain',
@@ -175,11 +185,6 @@ atomStrainTemplate = """&control
     ion_dynamics = 'bfgs'
  /
 
-CELL_PARAMETERS (bohr)
-$aaa1 $aaa2 $aaa3
--$aaa4 $aaa5 $aaa6
--$aaa7 -$aaa8 $aaa9
-
 ATOMIC_SPECIES
 K  39.0983 $pseudo
 
@@ -187,7 +192,7 @@ ATOMIC_POSITIONS (angstrom)
 K  0   0   0
 
 K_POINTS automatic
-8 8 8 0 0 0
+20 20 20 0 0 0
 """
 
 atomShearTemplate = """&control

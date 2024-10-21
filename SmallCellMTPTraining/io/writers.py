@@ -198,6 +198,11 @@ def writeMDInput(fileName: str, jobProperties: dict):
     newMDJob = re.sub(r"\$222", str(jobProperties["boxDimensions"][1]), newMDJob)
     newMDJob = re.sub(r"\$333", str(jobProperties["boxDimensions"][2]), newMDJob)
 
+    if jobProperties["includeVacancies"] and np.random.random() < 0.65:
+        newMDJob = re.sub(r"\$vvv", str(1), newMDJob)
+    else:
+        newMDJob = re.sub(r"\$vvv", str(0), newMDJob)
+
     with open(fileName, "w") as f:
         f.write(newMDJob)
 
@@ -215,6 +220,7 @@ def writeTrainJob(fileName: str, jobProperties: dict):
         "potFile",
         "trainFile",
         "initRandom",
+        "mode"
     ]
     """
 
@@ -235,6 +241,7 @@ def writeTrainJob(fileName: str, jobProperties: dict):
     newTrainJob = re.sub(r"\$pot", jobProperties["potFile"], newTrainJob)
     newTrainJob = re.sub(r"\$train", jobProperties["trainFile"], newTrainJob)
     newTrainJob = re.sub(r"\$init", jobProperties["initRandom"], newTrainJob)
+    newTrainJob = re.sub(r"\$mode", jobProperties["mode"], newTrainJob)
 
     with open(fileName, "w") as f:
         f.write(newTrainJob)

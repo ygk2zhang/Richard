@@ -48,6 +48,7 @@ trainJobProperties = [
     "potFile",
     "trainFile",
     "initRandom",
+    "mode",
 ]
 
 selectJobProperties = [

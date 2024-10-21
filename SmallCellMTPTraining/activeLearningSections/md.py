@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import regex as re
 import numpy as np
+import time
 
 import SmallCellMTPTraining.io.writers as wr
 import SmallCellMTPTraining.io.parsers as pa
@@ -50,6 +51,7 @@ def performParallelMDRuns(
                 "temperature": temperature,
                 "potFile": potFile,
                 "boxDimensions": config["mdLatticeConfigs"][i],
+                "includeVacancies": i >= 3 and config["includeVacancies"] == True,
             }
 
             jobProperties = {
@@ -66,6 +68,7 @@ def performParallelMDRuns(
             wr.writeMDInput(mdFile, mdProperties)
             wr.writeMDJob(jobFile, jobProperties)
             subprocesses.append(subprocess.Popen(["sbatch", jobFile]))
+            time.sleep(0.1)
 
     exitCodes = [p.wait() for p in subprocesses]
 
