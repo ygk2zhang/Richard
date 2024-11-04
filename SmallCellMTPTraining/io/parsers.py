@@ -50,7 +50,7 @@ def parseQEOutput(fileName: str, convertToAngRy=True) -> dict:
 
         # Get the atom position vectors
         positionVectorsStrings = re.findall(
-            r"\d\s*K   tau\(\s+\d+\) = \(\s*-?\d*\.?\d*\s*-?\d*\.?\d*\s*-?\d*\.?\d*  \)",
+            r"\d\s*[A-Z][a-z]?\s+tau\(\s+\d+\) = \(\s*-?\d*\.?\d*\s*-?\d*\.?\d*\s*-?\d*\.?\d*  \)",
             content,
         )
         # print(positionVectorsStrings)
@@ -223,11 +223,17 @@ def parseAllQEInDirectory(dirName: str, convertFromAngRy=True) -> list:
     qeOutputs = []
     for filename in sorted(os.listdir(dirName)):
         if filename.endswith(".out"):
-            output = parseQEOutput(os.path.join(dirName, filename), convertFromAngRy)
-            if output["jobComplete"] == False:
+            try:
+                output = parseQEOutput(
+                    os.path.join(dirName, filename), convertFromAngRy
+                )
+                if output["jobComplete"] == False:
+                    os.remove(os.path.abspath(filename))
+                else:
+                    qeOutputs.append(output)
+            except:
+                print(filename + " has failed!")
                 os.remove(os.path.abspath(filename))
-            else:
-                qeOutputs.append(output)
 
     return qeOutputs
 

@@ -14,10 +14,10 @@ def trainMTP(
     timeFile = os.path.join(logsFolder, "train.time")
     jobProperties = {
         "jobName": "train",
-        "ncpus": 12,
+        "ncpus": config["trainCPUs"],
         "runFile": runFile,
         "timeFile": timeFile,
-        "maxDuration": "0-6:00",
+        "maxDuration": config["trainTime"],
         "memPerCpu": "4G",
         "potFile": potFile,
         "trainFile": trainingFIle,
@@ -32,9 +32,9 @@ def trainMTP(
         lines = txtfile.readlines()
         for i, line in enumerate(lines):
             if line == "Energy per atom:\n":
-                avgEnergyError = lines[i + 3][31:-1]
+                avgEnergyError = lines[i + 4][31:-1]
             if line == "Forces:\n":
-                avgForceError = lines[i + 3][31:-1]
+                avgForceError = lines[i + 4][31:-1]
 
     timeSpent = pa.parseTimeFile(timeFile)
 
@@ -52,10 +52,10 @@ def selectDiffConfigs(
     timeFile = os.path.join(logsFolder, "selectAdd.time")
     jobProperties = {
         "jobName": "selectAdd",
-        "ncpus": 2,
+        "ncpus": 6,
         "runFile": os.path.join(logsFolder, "selectAdd.out"),
         "timeFile": timeFile,
-        "maxDuration": "0-1:00",
+        "maxDuration": "0-6:00",
         "memPerCpu": "6G",
         "potFile": potFile,
         "trainFile": trainingFile,

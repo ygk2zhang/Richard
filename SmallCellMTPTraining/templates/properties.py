@@ -5,6 +5,7 @@ distanceConversion = 0.5291772105638411  # Ang to Bohr
 # A list of the minimum necessary properties to create a Quantum Espresso input file
 qeProperties = [
     "atomPositions",
+    "atomTypes",
     "superCell",
     "kPoints",
     "ecutwfc",
@@ -36,7 +37,7 @@ calcJobProperties = [
 ]
 
 # A list of the minimum necessary properties to write an MD run
-mdProperties = ["latticeParameter", "boxDimensions", "potFile", "temperature"]
+mdProperties = ["potFile", "temperature", "pressure"]
 
 trainJobProperties = [
     "jobName",

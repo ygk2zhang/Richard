@@ -27,11 +27,17 @@ def compileTrainingConfigurations(
         trainingConfigsFolder
     )  # Extract the Quantum Espresso Configs
 
-    # Change the type index from 1-indexing to 0 indexing and rescale the energies
+    # Change the type index from 1-indexing to 0 indexing and shift the energies
     for output in qeOutputs:
+        counts = [0, 0, 0]  # Keep track of the number of each atom type for each config
         for i, atomType in enumerate(output["atomTypes"]):
             output["atomTypes"][i] -= 1
-        output["energy"] -= config["baseEnergyReference"] * len(output["atomTypes"])
+            counts[int(output["atomTypes"][i])] += 1
+        output["energy"] -= (
+            counts[0] * -1318.762728
+            + counts[1] * -469.48410546
+            + counts[2] * -451.721781368
+        )
 
     # Move the outputs to the archive and clear the folder
     shutil.copytree(trainingConfigsFolder, os.path.join(archiveConfigsFolder, tag))

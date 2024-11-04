@@ -19,13 +19,14 @@ def checkProperties(propertiesToCheck: int, propeties: dict):
 
 def writeQEInput(fileName: str, taskProperties: dict) -> str:
     """Creates a QE input, needing
-        properties = [
+            qeProperties = [
         "atomPositions",
+        "atomTypes",
         "superCell",
         "kPoints",
         "ecutwfc",
         "ecutrho",
-        "qeOutDir",
+        "qeOutDir"
     ]
     """
     properties = props.qeProperties
@@ -47,11 +48,13 @@ def writeQEInput(fileName: str, taskProperties: dict) -> str:
     newQEInput = re.sub(r"\$ecut", str(taskProperties["ecutwfc"]), newQEInput)
     newQEInput = re.sub(r"\$erho", str(taskProperties["ecutrho"]), newQEInput)
 
+    conversion = ["Na", "Cl", "O"]
     # Generate a series of string representing the list of atoms and positions
     atomPositionsString = []
     for a in np.arange(numAtoms):
         atomPositionsString.append(
-            " K %f %f %f \n"
+            conversion[int(taskProperties["atomTypes"][a])]
+            + " %f %f %f \n"
             % (
                 taskProperties["atomPositions"][a][0],
                 taskProperties["atomPositions"][a][1],
@@ -180,7 +183,7 @@ def writeMDJob(fileName: str, jobProperties: dict):
 
 def writeMDInput(fileName: str, jobProperties: dict):
     """Creates a MD Input, needing:
-    mdProperties = ["latticeParameter", "boxDimensions", "potFile", "temperature"]
+    mdProperties = ["potFile", "temperature", "pressure"]
     """
 
     properties = props.mdProperties
@@ -190,18 +193,10 @@ def writeMDInput(fileName: str, jobProperties: dict):
         )
 
     newMDJob = re.sub(
-        r"\$base", str(jobProperties["latticeParameter"]), templates.mdInputTemplate
+        r"\$ttt", str(jobProperties["temperature"]), templates.mdInputTemplate
     )
-    newMDJob = re.sub(r"\$ttt", str(jobProperties["temperature"]), newMDJob)
     newMDJob = re.sub(r"\$pot", jobProperties["potFile"], newMDJob)
-    newMDJob = re.sub(r"\$111", str(jobProperties["boxDimensions"][0]), newMDJob)
-    newMDJob = re.sub(r"\$222", str(jobProperties["boxDimensions"][1]), newMDJob)
-    newMDJob = re.sub(r"\$333", str(jobProperties["boxDimensions"][2]), newMDJob)
-
-    if jobProperties["includeVacancies"] and np.random.random() < 0.65:
-        newMDJob = re.sub(r"\$vvv", str(1), newMDJob)
-    else:
-        newMDJob = re.sub(r"\$vvv", str(0), newMDJob)
+    newMDJob = re.sub(r"\$ppp", str(jobProperties["pressure"]), newMDJob)
 
     with open(fileName, "w") as f:
         f.write(newMDJob)

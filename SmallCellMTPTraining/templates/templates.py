@@ -11,16 +11,17 @@ qeInputTemplate = """
  &system
    ibrav=0,
    nat=$nnn,
-   ntyp=1,
+   ntyp=3,
    ecutwfc=$ecut,
    ecutrho=$erho
    occupations='smearing',
    smearing = 'gaussian',
-   degauss = 0.005,
+   degauss = 0.02,
  /
  &electrons
    mixing_mode='plain',
    diagonalization='david',
+   electron_maxstep=1000
 /
  &ions
    ion_dynamics = 'bfgs'
@@ -28,7 +29,10 @@ qeInputTemplate = """
 CELL_PARAMETERS (angstrom)
    $ccc
 ATOMIC_SPECIES
-K  39.0983 K.pbe-spn-kjpaw_psl.1.0.0.UPF
+Na 22.99 Na.pbe-spnl-rrkjus_psl.1.0.0.UPF
+Cl 35.453 Cl.pbe-n-rrkjus_psl.0.1.UPF
+O  15.999 O.pbe-n-rrkjus_psl.0.1.UPF
+
 ATOMIC_POSITIONS (angstrom)
    $aaa
 K_POINTS automatic
@@ -52,9 +56,11 @@ module load    cuda/11.6.1
 module load    StdEnv/2020  gcc/9.3.0  openmpi/4.0.3
 module load    quantumespresso/6.6
 
+
 cd $folder
 
-pw.x < $inFile > $outFile
+export OMP_NUM_THREADS=1
+mpirun -np $cpus --oversubscribe pw.x < $inFile > $outFile
 """
 
 mdJobTemplate = """#!/bin/bash
@@ -84,11 +90,7 @@ boundary         p p p
 
 
 atom_style       atomic
-lattice          bcc $base
-region           whole block 0 $111 0 $222 0 $333 units lattice
-create_box       1  whole
-create_atoms     1 region whole
-mass             1 39.0983
+read_data config.dat
 
 pair_style mlip      load_from=$pot extrapolation_control=true threshold_save=2.1 threshold_break=10  extrapolation_control:save_extrapolative_to=preselected.cfg
 pair_coeff * *
@@ -100,18 +102,7 @@ timestep	0.001
 thermo_style    custom step temp 
 thermo 1000
 
-delete_atoms random count $vvv no all NULL 12345
-
-# Hack for a quick pseudo-random seed
-variable tmr timer
-variable seed equal ceil(10000000*${tmr})
-variable rand_scale equal random(0.99,1.01,${seed}) # Random uniaxial strain +-1%
-
-fix		1 all nve
-fix     def all deform 1 y scale ${rand_scale} #Apply the random strain
-run 1 
-unfix def
-fix		2 all langevin $ttt $ttt 0.1 826234 zero yes
+fix 1 all npt temp $ttt $ttt 0.1 iso $ppp $ppp 1
 
 
 run             100000
@@ -135,8 +126,9 @@ module load    cuda/11.6.1
 module load       StdEnv/2020  gcc/9.3.0
 module load openmpi/4.0.3
 
-/usr/bin/time -o $timeFile -f "%e" mpirun -np $cpus --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train $pot $train --iteration_limit=10000 --tolerance=0.000001 --init_random=$init --al_mode=$mode
+/usr/bin/time -o $timeFile -f "%e" mpirun -np $cpus --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train $pot $train --init_random=$init --al_mode=$mode
 """
+# --iteration_limit=10000 --tolerance=0.000001
 
 selectJobTemplate = """#!/bin/bash
 #SBATCH --account=def-hpcg1725
