@@ -233,7 +233,7 @@ def parseAllQEInDirectory(dirName: str, convertFromAngRy=True) -> list:
                     qeOutputs.append(output)
             except:
                 print(filename + " has failed!")
-                os.remove(os.path.abspath(filename))
+                # os.remove(os.path.abspath(filename))
 
     return qeOutputs
 

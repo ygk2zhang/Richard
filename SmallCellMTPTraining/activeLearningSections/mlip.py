@@ -55,7 +55,7 @@ def selectDiffConfigs(
         "ncpus": 6,
         "runFile": os.path.join(logsFolder, "selectAdd.out"),
         "timeFile": timeFile,
-        "maxDuration": "0-6:00",
+        "maxDuration": "0-8:00",
         "memPerCpu": "6G",
         "potFile": potFile,
         "trainFile": trainingFile,

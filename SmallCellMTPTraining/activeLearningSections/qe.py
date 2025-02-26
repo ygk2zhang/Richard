@@ -64,7 +64,10 @@ def calculateDiffConfigs(
     for j, newConfig in enumerate(newConfigs):
         identifier = str(attempt) + "_" + str(iteration) + "_" + str(j)
         outFile = os.path.join(outputFolder, identifier + ".out")
-        qeOutput = pa.parseQEOutput(outFile)
+        try:
+            qeOutput = pa.parseQEOutput(outFile)
+        except:
+            continue
         cpuTimesSpent.append(qeOutput["cpuTimeSpent"])
 
     return exitCodes, cpuTimesSpent
