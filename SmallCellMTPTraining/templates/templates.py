@@ -1,43 +1,43 @@
 # templates.py
-class templates:
-    qeInputTemplate = """
+
+qeInputTemplate = """
 &control
-   disk_io = 'none',
-   prefix = 'diffDFT',
-   calculation ='scf',
-   outdir = '{out}',
-   pseudo_dir = '/global/home/hpc5146',
-   tstress = .true.
-   tprnfor = .true.
- /
- &system
-   ibrav=0,
-   nat={nat},
-   ntyp={ntyp},
-   ecutwfc={ecut},
-   ecutrho={erho}
-   occupations='smearing',
-   smearing = 'gaussian',
-   degauss = 0.005,
- /
- &electrons
-   mixing_mode='plain',
-   diagonalization='david',
+disk_io = 'none',
+prefix = 'diffDFT',
+calculation ='scf',
+outdir = '{out}',
+pseudo_dir = '/global/home/hpc5146',
+tstress = .true.
+tprnfor = .true.
 /
- &ions
-   ion_dynamics = 'bfgs'
- /
+&system
+ibrav=0,
+nat={nat},
+ntyp={ntyp},
+ecutwfc={ecut},
+ecutrho={erho}
+occupations='smearing',
+smearing = 'gaussian',
+degauss = 0.005,
+/
+&electrons
+mixing_mode='plain',
+diagonalization='david',
+/
+&ions
+ion_dynamics = 'bfgs'
+/
 CELL_PARAMETERS (angstrom)
-   {ccc}
+{ccc}
 ATOMIC_SPECIES
 {atomic_species}
 ATOMIC_POSITIONS (angstrom)
-   {aaa}
+{aaa}
 K_POINTS automatic
 {k1} {k2} {k3} 0 0 0
 """
 
-    qeJobTemplate = """#!/bin/bash
+qeJobTemplate = """#!/bin/bash
 #SBATCH --account=def-hpcg1725
 #SBATCH --partition=reserved
 #SBATCH --qos=privileged
@@ -55,11 +55,11 @@ module load    StdEnv/2020  gcc/9.3.0  openmpi/4.0.3
 module load    quantumespresso/6.6
 
 cd {folder}
-
-pw.x < {inFile} > {outFile}
+export OMP_NUM_THREADS={cpus}
+mpirun -np 1 pw.x < {inFile} > {outFile}
 """
 
-    mdJobTemplate = """#!/bin/bash
+mdJobTemplate = """#!/bin/bash
 #SBATCH --account=def-hpcg1725
 #SBATCH --partition=reserved
 #SBATCH --qos=privileged
@@ -80,7 +80,7 @@ cd {folder}
 /usr/bin/time -o {timeFile} -f "%e" mpirun -np {cpus} /global/home/hpc5146/interface-lammps-mlip-3/lmp_mpi < {inFile} > {outFile}
 """
 
-    mdInputTemplate = """units            metal
+mdInputTemplate = """units            metal
 dimension        3
 boundary         p p p
 
@@ -108,7 +108,7 @@ run             100000
 reset_timestep  0
 """
 
-    trainJobTemplate = """#!/bin/bash
+trainJobTemplate = """#!/bin/bash
 #SBATCH --account=def-hpcg1725
 #SBATCH --partition=reserved
 #SBATCH --qos=privileged
@@ -128,7 +128,7 @@ module load openmpi/4.0.3
 /usr/bin/time -o {timeFile} -f "%e" mpirun -np {cpus} --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train {pot} {train} --iteration_limit=10000 --tolerance=0.000001 --init_random={init} --al_mode={mode}
 """
 
-    selectJobTemplate = """#!/bin/bash
+selectJobTemplate = """#!/bin/bash
 #SBATCH --account=def-hpcg1725
 #SBATCH --partition=reserved
 #SBATCH --qos=privileged
@@ -148,32 +148,32 @@ module load openmpi/4.0.3
 /usr/bin/time -o {timeFile} -f "%e" mpirun -np {cpus} --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp select_add {pot} {train} {preselected} {diff}
 """
 
-    atomStrainTemplate = """&control
-    disk_io = 'none',
-    prefix = 'strainK',
-    calculation ='scf',
-    outdir = '{out}',
-    pseudo_dir = '{pseudo_dir}'
-    tstress = .true.
-    tprnfor = .true.
- /
- &system
-    ibrav=3,
-    celldm(1)={cell}
-    nat=1,
-    ntyp=1,
-    ecutwfc=150,
-    occupations='smearing',
-    smearing = 'gaussian',
-    degauss = 0.005,
- /
- &electrons
-    mixing_mode='plain',
-    diagonalization='david',
+atomStrainTemplate = """&control
+disk_io = 'none',
+prefix = 'strainK',
+calculation ='scf',
+outdir = '{out}',
+pseudo_dir = '{pseudo_dir}'
+tstress = .true.
+tprnfor = .true.
 /
- &ions
-    ion_dynamics = 'bfgs'
- /
+&system
+ibrav=3,
+celldm(1)={cell}
+nat=1,
+ntyp=1,
+ecutwfc=150,
+occupations='smearing',
+smearing = 'gaussian',
+degauss = 0.005,
+/
+&electrons
+mixing_mode='plain',
+diagonalization='david',
+/
+&ions
+ion_dynamics = 'bfgs'
+/
 
 ATOMIC_SPECIES
 K  39.0983 {pseudo}
@@ -185,101 +185,42 @@ K_POINTS automatic
 20 20 20 0 0 0
 """
 
-    atomShearTemplate = """&control
-    disk_io = 'none',
-    prefix = 'shearK',
-    calculation ='scf',
-    outdir = '{out}',
-    pseudo_dir = '{pseudo_dir}'
-    tstress = .true.
-    tprnfor = .true.
- /
- &system
-    ibrav=0,
-    nat=1,
-    ntyp=1,
-    ecutwfc=60,
-    occupations='smearing',
-    smearing = 'gaussian',
-    degauss = 0.01,
- /
- &electrons
-    mixing_mode='plain',
-    diagonalization='david',
+atomShearTemplate = """&control
+disk_io = 'none',
+prefix = 'shearK',
+calculation ='scf',
+outdir = '{out}',
+pseudo_dir = '{pseudo_dir}'
+tstress = .true.
+tprnfor = .true.
 /
- &ions
-    ion_dynamics = 'bfgs'
- /
+&system
+ibrav=0,
+nat=1,
+ntyp=1,
+ecutwfc=60,
+occupations='smearing',
+smearing = 'gaussian',
+degauss = 0.01,
+/
+&electrons
+mixing_mode='plain',
+diagonalization='david',
+/
+&ions
+ion_dynamics = 'bfgs'
+/
 
 CELL_PARAMETERS (bohr)
-    {bbb1} {aaa2} {aaa3}
-    -{bbb4} {bbb5} {bbb6}
-    -{bbb7} -{bbb8} {bbb9}
+{bbb1} {aaa2} {aaa3}
+-{bbb4} {bbb5} {bbb6}
+-{bbb7} -{bbb8} {bbb9}
 
 ATOMIC_SPECIES
-    K  39.0983 {pseudo}
+K  39.0983 {pseudo}
 
 ATOMIC_POSITIONS (angstrom)
-    K  0   0   0
-    
+K  0   0   0
+
 K_POINTS automatic
-    8 8 8 0 0 0"""
-
-
-class properties:
-    qeProperties = [
-        "atomPositions",
-        "atomTypes",
-        "superCell",
-        "kPoints",
-        "ecutwfc",
-        "ecutrho",
-        "qeOutDir",
-        "elements",
-        "atomicWeights",
-        "pseudopotentials",
-    ]
-    calcJobProperties = [
-        "jobName",
-        "ncpus",
-        "runFile",
-        "maxDuration",
-        "memPerCpu",
-        "inFile",
-        "outFile",
-    ]
-    mdProperties = [
-        "latticeParameter",
-        "boxDimensions",
-        "potFile",
-        "temperature",
-        "elements",
-        "atomicWeights",
-    ]
-    trainJobProperties = [
-        "jobName",
-        "ncpus",
-        "runFile",
-        "maxDuration",
-        "memPerCpu",
-        "potFile",
-        "trainFile",
-        "initRandom",
-        "mode",
-        "timeFile",
-    ]
-    selectJobProperties = [
-        "jobName",
-        "ncpus",
-        "runFile",
-        "maxDuration",
-        "memPerCpu",
-        "potFile",
-        "trainFile",
-        "preselectedFile",
-        "diffFile",
-        "timeFile",
-    ]
-
-    energyConversion = 13.605703976
-    distanceConversion = 0.529177249
+8 8 8 0 0 0"""

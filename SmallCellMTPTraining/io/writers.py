@@ -222,20 +222,20 @@ def writeMDInput(fileName: str, jobProperties: dict):
                             (i + base_atom[0])
                             / nx
                             * jobProperties["boxDimensions"][0]
-                            * jobProperties["latticeParameter"]
-                        )  # Added lattice scaling
+                            # * jobProperties["latticeParameter"]
+                        )
                         y = (
                             (j + base_atom[1])
                             / ny
                             * jobProperties["boxDimensions"][1]
-                            * jobProperties["latticeParameter"]
-                        )  # Added lattice scaling
+                            # * jobProperties["latticeParameter"]
+                        )
                         z = (
                             (k + base_atom[2])
                             / nz
                             * jobProperties["boxDimensions"][2]
-                            * jobProperties["latticeParameter"]
-                        )  # Added lattice scaling
+                            # * jobProperties["latticeParameter"]
+                        )
 
                         atom_type = atom_types[n_created] + 1  # +1 for LAMMPS numbering
 

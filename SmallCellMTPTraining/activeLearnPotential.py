@@ -117,10 +117,6 @@ def runActiveLearningScheme(
     ### ===== Prepare Active Learning Loop =====
     # Read the breadth of the parallel training runs
     cellDimensionsList = config["mdLatticeConfigs"]
-    temperatures = config["mdTemperatures"]
-    strains = np.arange(
-        config["mdStrainRange"][0], config["mdStrainRange"][1], config["mdStrainStep"]
-    )
 
     # ### ===== Begin Active Learning Loop =====
     for stage in range(
@@ -143,9 +139,7 @@ def runActiveLearningScheme(
             )
 
             ### ===== Train the MTP ====
-            if initial_pot and not is_resuming:
-                inital_pot = None  # Do not training for the first cycle of a fresh run if we specify an inital pot
-            else:
+            if os.path.isfile(trainingFile):
                 wr.printAndLog(logFile, "Starting Training Stage.")
                 avgEnergyError, avgForceError, trainingTime = trainMTP(
                     os.path.join(logsFolder, "train.qsub"),
@@ -170,12 +164,9 @@ def runActiveLearningScheme(
             (
                 mdExitCodes,
                 preselectedIterationLogs,
-                temperatureAverageGrades,
                 hasPreselected,
                 mdCPUTimesSpent,
             ) = performParallelMDRuns(
-                temperatures,
-                strains,
                 stage,
                 mdRunsFolder,
                 potFile,
@@ -197,12 +188,6 @@ def runActiveLearningScheme(
                     "No Preselected Found. Going to Next Lattice Configuration.",
                 )
                 break
-
-            wr.printAndLog(
-                logFile,
-                "Average Extrapolation Grade By Temperature: "
-                + str(temperatureAverageGrades),
-            )
 
             ### ===== Select the needed configurations =====
             wr.printAndLog(logFile, "Selecting New Configurations.")

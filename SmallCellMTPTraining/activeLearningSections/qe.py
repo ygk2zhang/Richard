@@ -50,7 +50,7 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, params: dict):
         # Prepare QE input properties
         qeProperties = {
             "atomPositions": np.array([[0, 0, 0], [0.5, 0.5, 0.5]]),
-            "atomTypes": [0],
+            "atomTypes": [0, 0],
             "superCell": np.array(
                 [
                     [strain * params["baseLatticeParameter"], 0, 0],
