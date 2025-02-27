@@ -1,5 +1,5 @@
+# writers.py
 from datetime import datetime
-import re
 import numpy as np
 import os
 
@@ -7,10 +7,10 @@ from SmallCellMTPTraining.templates import templates as templates
 from SmallCellMTPTraining.templates import properties as props
 
 
-def checkProperties(propertiesToCheck: int, propeties: dict):
+def checkProperties(propertiesToCheck: list, properties: dict):
     missing = []
     for ele in propertiesToCheck:
-        if not ele in propeties:
+        if ele not in properties:
             missing.append(ele)
     if missing:
         return ", ".join(missing)
@@ -19,13 +19,17 @@ def checkProperties(propertiesToCheck: int, propeties: dict):
 
 def writeQEInput(fileName: str, taskProperties: dict) -> str:
     """Creates a QE input, needing
-        properties = [
+    properties = [
         "atomPositions",
+        "atomTypes",
         "superCell",
         "kPoints",
         "ecutwfc",
         "ecutrho",
         "qeOutDir",
+        "elements",
+        "atomicWeights",
+        "pseudopotentials",
     ]
     """
     properties = props.qeProperties
@@ -35,33 +39,45 @@ def writeQEInput(fileName: str, taskProperties: dict) -> str:
         )
 
     numAtoms = len(taskProperties["atomPositions"])
-    newQEInput = re.sub(
-        r"\$nnn", str(numAtoms), templates.qeInputTemplate
-    )  # substitute nat marker with the number of atoms
+    num_elem = len(taskProperties["elements"])
     superCellStrings = [str(x)[1:-1] for x in taskProperties["superCell"]]
-    newQEInput = re.sub(r"\$ccc", "\n  ".join(superCellStrings), newQEInput)
-    newQEInput = re.sub(r"\$k1", str(taskProperties["kPoints"][0]), newQEInput)
-    newQEInput = re.sub(r"\$k2", str(taskProperties["kPoints"][1]), newQEInput)
-    newQEInput = re.sub(r"\$k3", str(taskProperties["kPoints"][2]), newQEInput)
-    newQEInput = re.sub(r"\$out", taskProperties["qeOutDir"], newQEInput)
-    newQEInput = re.sub(r"\$ecut", str(taskProperties["ecutwfc"]), newQEInput)
-    newQEInput = re.sub(r"\$erho", str(taskProperties["ecutrho"]), newQEInput)
 
-    # Generate a series of string representing the list of atoms and positions
+    # Generate ATOMIC_SPECIES block
+    atomic_species_str = ""
+    for i in range(num_elem):
+        atomic_species_str += "{}  {} {}\n".format(
+            taskProperties["elements"][i],
+            taskProperties["atomicWeights"][i],
+            taskProperties["pseudopotentials"][i],
+        )
+
+    # Generate ATOMIC_POSITIONS block
     atomPositionsString = []
-    for a in np.arange(numAtoms):
+    for a in range(numAtoms):
+        atom_type_index = taskProperties["atomTypes"][a]
         atomPositionsString.append(
-            " K %f %f %f \n"
-            % (
+            " {} {} {} {} \n".format(
+                taskProperties["elements"][atom_type_index],
                 taskProperties["atomPositions"][a][0],
                 taskProperties["atomPositions"][a][1],
                 taskProperties["atomPositions"][a][2],
             )
         )
-    atomPositions = " ".join(atomPositionsString)
-    newQEInput = re.sub(
-        r"\$aaa", atomPositions, newQEInput
-    )  # Subsitiute it in for the marker
+    atomPositions = "".join(atomPositionsString)  # Corrected: join directly
+
+    newQEInput = templates.qeInputTemplate.format(
+        nat=numAtoms,
+        ntyp=num_elem,
+        ccc="\n  ".join(superCellStrings),
+        k1=taskProperties["kPoints"][0],
+        k2=taskProperties["kPoints"][1],
+        k3=taskProperties["kPoints"][2],
+        out=taskProperties["qeOutDir"],
+        ecut=taskProperties["ecutwfc"],
+        erho=taskProperties["ecutrho"],
+        atomic_species=atomic_species_str,
+        aaa=atomPositions,
+    )
 
     with open(fileName, "w") as f:
         f.write(newQEInput)
@@ -70,37 +86,25 @@ def writeQEInput(fileName: str, taskProperties: dict) -> str:
 
 
 def writeQEJob(fileName: str, jobProperties: dict):
-    """Creates a QE Job, needing:
-        jobProperties = [
-        "jobName",
-        "ncpus",
-        "runFile",
-        "maxDuration",
-        "memPerCpu",
-        "inFile",
-        "outFile",
-    ]"""
-
+    """Creates a QE Job."""
     properties = props.calcJobProperties
     if checkProperties(properties, jobProperties):
         raise Exception(
             "Properties missing: " + checkProperties(properties, jobProperties)
         )
 
-    # print(jobProperties)
-
-    newQEJob = re.sub(r"\$cpus", str(jobProperties["ncpus"]), templates.qeJobTemplate)
-    newQEJob = re.sub(r"\$jobName", jobProperties["jobName"], newQEJob)
-    newQEJob = re.sub(r"\$time", jobProperties["maxDuration"], newQEJob)
-    newQEJob = re.sub(r"\$runFile", jobProperties["runFile"], newQEJob)
-    newQEJob = re.sub(r"\$folder", os.path.dirname(jobProperties["inFile"]), newQEJob)
-    newQEJob = re.sub(r"\$inFile", os.path.basename(jobProperties["inFile"]), newQEJob)
-    newQEJob = re.sub(r"\$outFile", jobProperties["outFile"], newQEJob)
-    newQEJob = re.sub(r"\$mem", jobProperties["memPerCpu"], newQEJob)
-
+    newQEJob = templates.qeJobTemplate.format(
+        cpus=jobProperties["ncpus"],
+        jobName=jobProperties["jobName"],
+        time=jobProperties["maxDuration"],
+        runFile=jobProperties["runFile"],
+        folder=os.path.dirname(jobProperties["inFile"]),
+        inFile=os.path.basename(jobProperties["inFile"]),
+        outFile=jobProperties["outFile"],
+        mem=jobProperties["memPerCpu"],
+    )
     with open(fileName, "w") as f:
         f.write(newQEJob)
-
     return newQEJob
 
 
@@ -144,104 +148,142 @@ def writeMTPConfigs(filename: str, mtpPropertiesList: list):
 
 
 def writeMDJob(fileName: str, jobProperties: dict):
-    """Creates a MD Job, needing:
-        jobProperties = [
-        "jobName",
-        "ncpus",
-        "runFile",
-        "maxDuration",
-        "memPerCpu",
-        "inFile",
-        "outFile",
-        "timeFile",
-    ]"""
-
+    """Creates a MD Job."""
     properties = props.calcJobProperties
     if checkProperties(properties, jobProperties):
         raise Exception(
             "Properties missing: " + checkProperties(properties, jobProperties)
         )
 
-    newMDJob = re.sub(r"\$cpus", str(jobProperties["ncpus"]), templates.mdJobTemplate)
-    newMDJob = re.sub(r"\$jobName", jobProperties["jobName"], newMDJob)
-    newMDJob = re.sub(r"\$timeFile", jobProperties["timeFile"], newMDJob)
-    newMDJob = re.sub(r"\$time", jobProperties["maxDuration"], newMDJob)
-    newMDJob = re.sub(r"\$runFile", jobProperties["runFile"], newMDJob)
-    newMDJob = re.sub(r"\$folder", os.path.dirname(jobProperties["inFile"]), newMDJob)
-    newMDJob = re.sub(r"\$inFile", os.path.basename(jobProperties["inFile"]), newMDJob)
-    newMDJob = re.sub(r"\$outFile", jobProperties["outFile"], newMDJob)
-    newMDJob = re.sub(r"\$mem", jobProperties["memPerCpu"], newMDJob)
-
+    newMDJob = templates.mdJobTemplate.format(
+        cpus=jobProperties["ncpus"],
+        jobName=jobProperties["jobName"],
+        timeFile=jobProperties["timeFile"],
+        time=jobProperties["maxDuration"],
+        runFile=jobProperties["runFile"],
+        folder=os.path.dirname(jobProperties["inFile"]),
+        inFile=os.path.basename(jobProperties["inFile"]),
+        outFile=jobProperties["outFile"],
+        mem=jobProperties["memPerCpu"],
+    )
     with open(fileName, "w") as f:
         f.write(newMDJob)
-
     return newMDJob
 
 
 def writeMDInput(fileName: str, jobProperties: dict):
     """Creates a MD Input, needing:
-    mdProperties = ["latticeParameter", "boxDimensions", "potFile", "temperature"]
+    mdProperties = ["latticeParameter", "boxDimensions", "potFile", "temperature", "elements", "atomicWeights"]
     """
-
     properties = props.mdProperties
     if checkProperties(properties, jobProperties):
         raise Exception(
             "Properties missing: " + checkProperties(properties, jobProperties)
         )
+    num_elem = len(jobProperties["elements"])
+    # Calculate the number of unit cells in each dimension
+    nx = int(np.ceil(jobProperties["boxDimensions"][0]))
+    ny = int(np.ceil(jobProperties["boxDimensions"][1]))
+    nz = int(np.ceil(jobProperties["boxDimensions"][2]))
+    # Total number of atoms
+    num_atoms = 2 * nx * ny * nz  # 2 atoms per unit cell in BCC
 
-    newMDJob = re.sub(
-        r"\$base", str(jobProperties["latticeParameter"]), templates.mdInputTemplate
-    )
-    newMDJob = re.sub(r"\$ttt", str(jobProperties["temperature"]), newMDJob)
-    newMDJob = re.sub(r"\$pot", jobProperties["potFile"], newMDJob)
-    newMDJob = re.sub(r"\$111", str(jobProperties["boxDimensions"][0]), newMDJob)
-    newMDJob = re.sub(r"\$222", str(jobProperties["boxDimensions"][1]), newMDJob)
-    newMDJob = re.sub(r"\$333", str(jobProperties["boxDimensions"][2]), newMDJob)
-
-    if jobProperties["includeVacancies"] and np.random.random() < 0.65:
-        newMDJob = re.sub(r"\$vvv", str(1), newMDJob)
+    # Create atom types
+    if num_elem == 1:
+        atom_types = [0] * num_atoms  # All atoms are of the same type
     else:
-        newMDJob = re.sub(r"\$vvv", str(0), newMDJob)
+        # Keep generating atom types until we have at least two different types
+        while True:
+            atom_types = np.random.choice(
+                np.arange(num_elem), size=num_atoms
+            )  # Randomly assign types
+            if len(np.unique(atom_types)) > 1:
+                break  # Exit loop if we have more than one unique atom type
+
+    # Create mass block
+    mass_block = ""
+    for i in range(num_elem):
+        mass_block += "mass  {} {}\n".format(i + 1, jobProperties["atomicWeights"][i])
+
+    # Create atoms block
+    create_atoms_block = ""
+    n_created = 0
+    for i in range(nx):
+        for j in range(ny):
+            for k in range(nz):
+                for base_atom in [
+                    (0, 0, 0),
+                    (0.5, 0.5, 0.5),
+                ]:  # BCC basis atoms
+                    if (
+                        n_created < num_atoms
+                    ):  # This check is important! Before, we created too many atoms
+                        x = (
+                            (i + base_atom[0])
+                            / nx
+                            * jobProperties["boxDimensions"][0]
+                            * jobProperties["latticeParameter"]
+                        )  # Added lattice scaling
+                        y = (
+                            (j + base_atom[1])
+                            / ny
+                            * jobProperties["boxDimensions"][1]
+                            * jobProperties["latticeParameter"]
+                        )  # Added lattice scaling
+                        z = (
+                            (k + base_atom[2])
+                            / nz
+                            * jobProperties["boxDimensions"][2]
+                            * jobProperties["latticeParameter"]
+                        )  # Added lattice scaling
+
+                        atom_type = atom_types[n_created] + 1  # +1 for LAMMPS numbering
+
+                        create_atoms_block += (
+                            "create_atoms {} single {} {} {}\n".format(
+                                atom_type, x, y, z
+                            )
+                        )
+                        n_created += 1
+
+    newMDInput = templates.mdInputTemplate.format(
+        base=jobProperties["latticeParameter"],
+        ttt=jobProperties["temperature"],
+        pot=jobProperties["potFile"],
+        xdim=jobProperties["boxDimensions"][0],
+        ydim=jobProperties["boxDimensions"][1],
+        zdim=jobProperties["boxDimensions"][2],
+        num_elem=num_elem,
+        mass_block=mass_block,
+        create_atoms_block=create_atoms_block,
+    )
 
     with open(fileName, "w") as f:
-        f.write(newMDJob)
+        f.write(newMDInput)
 
-    return newMDJob
+    return newMDInput
 
 
 def writeTrainJob(fileName: str, jobProperties: dict):
-    """Creates a train Job, needing:
-        trainJobProperties = [
-        "jobName",
-        "ncpus",
-        "runFile",
-        "maxDuration",
-        "memPerCpu",
-        "potFile",
-        "trainFile",
-        "initRandom",
-        "mode"
-    ]
-    """
+    """Creates a train Job."""
 
     properties = props.trainJobProperties
     if checkProperties(properties, jobProperties):
         raise Exception(
             "Properties missing: " + checkProperties(properties, jobProperties)
         )
-
-    newTrainJob = re.sub(
-        r"\$cpus", str(jobProperties["ncpus"]), templates.trainJobTemplate
+    newTrainJob = templates.trainJobTemplate.format(
+        cpus=jobProperties["ncpus"],
+        jobName=jobProperties["jobName"],
+        timeFile=jobProperties["timeFile"],
+        time=jobProperties["maxDuration"],
+        runFile=jobProperties["runFile"],
+        mem=jobProperties["memPerCpu"],
+        pot=jobProperties["potFile"],
+        train=jobProperties["trainFile"],
+        init=jobProperties["initRandom"],
+        mode=jobProperties["mode"],
     )
-    newTrainJob = re.sub(r"\$jobName", jobProperties["jobName"], newTrainJob)
-    newTrainJob = re.sub(r"\$timeFile", jobProperties["timeFile"], newTrainJob)
-    newTrainJob = re.sub(r"\$time", jobProperties["maxDuration"], newTrainJob)
-    newTrainJob = re.sub(r"\$runFile", jobProperties["runFile"], newTrainJob)
-    newTrainJob = re.sub(r"\$mem", jobProperties["memPerCpu"], newTrainJob)
-    newTrainJob = re.sub(r"\$pot", jobProperties["potFile"], newTrainJob)
-    newTrainJob = re.sub(r"\$train", jobProperties["trainFile"], newTrainJob)
-    newTrainJob = re.sub(r"\$init", jobProperties["initRandom"], newTrainJob)
-    newTrainJob = re.sub(r"\$mode", jobProperties["mode"], newTrainJob)
 
     with open(fileName, "w") as f:
         f.write(newTrainJob)
@@ -250,45 +292,27 @@ def writeTrainJob(fileName: str, jobProperties: dict):
 
 
 def writeSelectJob(fileName: str, jobProperties: dict):
-    """Creates a select Job, needing:
-    selectJobProperties = [
-        "jobName",
-        "ncpus",
-        "runFile",
-        "maxDuration",
-        "memPerCpu",
-        "potFile",
-        "trainFile",
-        "preselectedFile",
-        "diffFile",
-        "timeFile",
-    ]
-    """
-
+    """Creates a select Job."""
     properties = props.selectJobProperties
     if checkProperties(properties, jobProperties):
         raise Exception(
             "Properties missing: " + checkProperties(properties, jobProperties)
         )
 
-    newSelectJob = re.sub(
-        r"\$cpus", str(jobProperties["ncpus"]), templates.selectJobTemplate
+    newSelectJob = templates.selectJobTemplate.format(
+        cpus=jobProperties["ncpus"],
+        jobName=jobProperties["jobName"],
+        timeFile=jobProperties["timeFile"],
+        time=jobProperties["maxDuration"],
+        runFile=jobProperties["runFile"],
+        mem=jobProperties["memPerCpu"],
+        pot=jobProperties["potFile"],
+        train=jobProperties["trainFile"],
+        preselected=jobProperties["preselectedFile"],
+        diff=jobProperties["diffFile"],
     )
-    newSelectJob = re.sub(r"\$jobName", jobProperties["jobName"], newSelectJob)
-    newSelectJob = re.sub(r"\$timeFile", jobProperties["timeFile"], newSelectJob)
-    newSelectJob = re.sub(r"\$time", jobProperties["maxDuration"], newSelectJob)
-    newSelectJob = re.sub(r"\$runFile", jobProperties["runFile"], newSelectJob)
-    newSelectJob = re.sub(r"\$mem", jobProperties["memPerCpu"], newSelectJob)
-    newSelectJob = re.sub(r"\$pot", jobProperties["potFile"], newSelectJob)
-    newSelectJob = re.sub(r"\$train", jobProperties["trainFile"], newSelectJob)
-    newSelectJob = re.sub(
-        r"\$preselected", jobProperties["preselectedFile"], newSelectJob
-    )
-    newSelectJob = re.sub(r"\$diff", jobProperties["diffFile"], newSelectJob)
-
     with open(fileName, "w") as f:
         f.write(newSelectJob)
-
     return newSelectJob
 
 
@@ -302,14 +326,44 @@ def printAndLog(fileName: str, message: str):
 
 
 if __name__ == "__main__":
+    # Example usage (you'll need a parsers.py with parseMTPConfigsFile)
     import parsers
 
-    MTPproperties = parsers.parseMTPConfigsFile(
-        "/global/home/hpc5146/Projects/K-MTP-training/newPots/16/train.cfg", False
-    )
-    for i, ele in enumerate(MTPproperties):
-        MTPproperties[i]["energy"] -= -0.95127868 * 13.605703976 * len(ele["atomIDs"])
-    writeMTPConfigs(
-        "/global/home/hpc5146/Projects/K-MTP-training/newPots/16/normalized.cfg",
-        MTPproperties,
-    )
+    # Create some dummy data for testing
+    example_qe_properties = {
+        "atomPositions": np.array([[0, 0, 0], [0.5, 0.5, 0.5]]),
+        "atomTypes": [0, 1],  # Two atoms, first is type 0 (K), second is type 1 (Mg)
+        "superCell": np.array([[10, 0, 0], [0, 10, 0], [0, 0, 10]]),
+        "kPoints": [4, 4, 4],
+        "ecutwfc": 30,
+        "ecutrho": 120,
+        "qeOutDir": "test_output",
+        "elements": ["K", "Mg"],
+        "atomicWeights": [39.0983, 24.305],
+        "pseudopotentials": [
+            "K.pbe-spn-kjpaw_psl.1.0.0.UPF",
+            "Mg.pbe-spn-kjpaw_psl.1.0.0.UPF",
+        ],
+    }
+
+    writeQEInput("qe_test_input.in", example_qe_properties)
+    example_md_properties = {
+        "latticeParameter": 4.2,
+        "boxDimensions": [3, 3, 3],
+        "potFile": "pot.mtp",
+        "temperature": 300,
+        "elements": ["K", "Mg"],
+        "atomicWeights": [39.0983, 24.305],
+    }
+
+    writeMDInput("md_test_input.in", example_md_properties)
+
+    example_md_properties_single = {
+        "latticeParameter": 4.2,
+        "boxDimensions": [3, 3, 3],
+        "potFile": "pot.mtp",
+        "temperature": 300,
+        "elements": ["K"],
+        "atomicWeights": [39.0983],
+    }
+    writeMDInput("md_test_input_single.in", example_md_properties_single)

@@ -1,8 +1,8 @@
+# parsers.py
 import numpy as np
 import re
 import os
 
-from SmallCellMTPTraining.templates import templates as templates
 from SmallCellMTPTraining.templates import properties as properties
 
 
@@ -249,12 +249,18 @@ def parsePartialMTPConfig(startIndex: int, fileLines: list) -> dict:
     atomTypes = infoArray[:, 1]
     atomPositions = infoArray[:, 2:5]
 
+    # Extract MV_grade using regex
+    mv_grade_line_index = startIndex + 12 + numAtoms
+    mv_grade_match = re.search(r"MV_grade=(\d+\.?\d*)", fileLines[mv_grade_line_index])
+    mv_grade = float(mv_grade_match.group(1)) if mv_grade_match else None
+
     return {
         "numAtoms": numAtoms,
         "atomIDs": atomIDs,
         "atomTypes": atomTypes,
         "atomPositions": atomPositions,
         "superCell": superCellVectors,
+        "MV_grade": mv_grade,
     }
 
 
@@ -296,19 +302,3 @@ if __name__ == "__main__":
             "/global/home/hpc5146/Projects/KTraining/temporaryFiles/train.cfg", False
         )
     )
-
-
-# with open(
-#     "/global/home/hpc5146/Projects/KTraining/temporaryFiles/train.cfg", "r"
-# ) as txtfile:
-#     fileLines = txtfile.readlines()
-#     index = np.where(np.array(fileLines) == "BEGIN_CFG\n")[
-#         0
-#     ]  # Seach for indiicides which match the beginning of a configuration
-#     print(parseMTPConfig(0, fileLines))
-
-# print(
-#     parseQEOutput(
-#         "/global/home/hpc5146/Projects/KTraining/temporaryFiles/diffDFTRun20.726004000000003.out"
-#     )
-# )

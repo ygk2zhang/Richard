@@ -15,7 +15,9 @@ from SmallCellMTPTraining.activeLearningSections.mlip import trainMTP, selectDif
 from SmallCellMTPTraining.activeLearningSections.md import performParallelMDRuns
 
 
-def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
+def runActiveLearningScheme(
+    rootFolder: str, config: dict, mtpLevel="08", initial_pot=None
+):
     ### ===== Start by setting folders and file in the root folder =====
     rootFolder = os.path.abspath(rootFolder)  # Work in absolute paths where possible
     mtpFolder = os.path.join(rootFolder, "mtp")
@@ -44,7 +46,6 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
 
     # Setup the MTP file names
     potFile = os.path.join(mtpFolder, "pot.almtp")
-    loadUntrainedMTP(potFile, mtpLevel)
     trainingFile = os.path.join(mtpFolder, "train.cfg")
     masterPreselectedFile = os.path.join(mtpFolder, "preselected.cfg")
     diffFile = os.path.join(mtpFolder, "diff.cfg")
@@ -56,9 +57,21 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
 
     ### ===== Determine if we are continuing a existing run by reading the DFT Archive =====
     existingArchiveFolders = os.listdir(dftArchiveFolder)
-    # Only generate a new initial dataset if there aren't existing dft files
-    if len(existingArchiveFolders) == 0:
-        ### ===== Initialization of the base training set =====
+    is_resuming = len(existingArchiveFolders) > 0  # Check if we are resuming
+
+    if initial_pot and not is_resuming:
+        if not os.path.exists(initial_pot):  # Check that the inital pot exists
+            raise FileNotFoundError(f"Initial potential file not found: {initial_pot}")
+        wr.printAndLog(logFile, f"Using initial potential: {initial_pot}")
+        shutil.copyfile(initial_pot, potFile)  # Copy the specified initial potential
+
+    if not initial_pot and not is_resuming:
+        if len(config["elements"]) > 1:
+            raise ValueError(
+                "For multiple elements, an initial potential (`initial_pot`) MUST be provided."
+            )
+        # Single element, new run, no initial pot: load untrained and generate initial dataset
+        loadUntrainedMTP(potFile, mtpLevel)
         wr.printAndLog(logFile, "Generating Initial Dataset.")
         initializationExitCodes = generateInitialDataset(
             dftInputsFolder, dftOutputsFolder, config
@@ -72,11 +85,7 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
         wr.printAndLog(logFile, "Completed Initial Dataset Generation.")
 
     # Otherwise, we are continuing a run, and we should parse where we were
-    elif (
-        len(existingArchiveFolders) == 1
-    ):  # This only happens if we fail right after the baseline
-        attempt += 1
-    else:
+    if is_resuming:
         # In order to extract where to resume the runs from, we parse the dft archive
         attempt, startingStage, startingIter = 0, 0, 0
         maxScore = 0
@@ -134,20 +143,27 @@ def runActiveLearningScheme(rootFolder: str, config: dict, mtpLevel="08"):
             )
 
             ### ===== Train the MTP ====
-            wr.printAndLog(logFile, "Starting Training Stage.")
-            avgEnergyError, avgForceError, trainingTime = trainMTP(
-                os.path.join(logsFolder, "train.qsub"),
-                logsFolder,
-                potFile,
-                trainingFile,
-                config,
-            )
-            wr.printAndLog(
-                logFile,
-                "Training Stage Complete; Wall Time: " + str(trainingTime) + "s",
-            )
-            wr.printAndLog(logFile, "Average Energy Per Atom Error: " + avgEnergyError)
-            wr.printAndLog(logFile, "Average Force Per Atom Error: " + avgForceError)
+            if initial_pot and not is_resuming:
+                inital_pot = None  # Do not training for the first cycle of a fresh run if we specify an inital pot
+            else:
+                wr.printAndLog(logFile, "Starting Training Stage.")
+                avgEnergyError, avgForceError, trainingTime = trainMTP(
+                    os.path.join(logsFolder, "train.qsub"),
+                    logsFolder,
+                    potFile,
+                    trainingFile,
+                    config,
+                )
+                wr.printAndLog(
+                    logFile,
+                    "Training Stage Complete; Wall Time: " + str(trainingTime) + "s",
+                )
+                wr.printAndLog(
+                    logFile, "Average Energy Per Atom Error: " + avgEnergyError
+                )
+                wr.printAndLog(
+                    logFile, "Average Force Per Atom Error: " + avgForceError
+                )
 
             ### ===== Perform the MD active learning runs
             wr.printAndLog(logFile, "Starting MD Runs.")

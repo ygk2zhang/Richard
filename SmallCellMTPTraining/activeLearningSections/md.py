@@ -1,7 +1,8 @@
 import os
 import shutil
 import subprocess
-import regex as re
+
+# import regex as re # Removed: no longer needed
 import numpy as np
 import time
 
@@ -51,7 +52,8 @@ def performParallelMDRuns(
                 "temperature": temperature,
                 "potFile": potFile,
                 "boxDimensions": config["mdLatticeConfigs"][i],
-                "includeVacancies": i >= 3 and config["includeVacancies"] == True,
+                "elements": config["elements"],
+                "atomicWeights": config["atomicWeights"],
             }
 
             jobProperties = {
@@ -96,13 +98,15 @@ def performParallelMDRuns(
 
             if os.path.exists(preselectedFile):
                 hasPreselected = True
-                with open(preselectedFile, "r") as src:
-                    content = src.read()
-                    preselectedGrades = list(
-                        map(float, re.findall(r"(?<=MV_grade\t)\d+.?\d*", content))
-                    )
-                    with open(masterPreselectedFile, "a") as dest:
-                        dest.write(content)
+                preselected_configs = pa.parsePartialMTPConfigsFile(preselectedFile)
+                preselectedGrades = [
+                    cfg["MV_grade"]
+                    for cfg in preselected_configs
+                    if cfg["MV_grade"] is not None
+                ]
+
+                with open(masterPreselectedFile, "a") as dest:
+                    wr.writeMTPConfigs(dest, preselected_configs)
 
             preselectedIterationLogs[identifier] = preselectedGrades
             if len(preselectedGrades) != 0:

@@ -1,6 +1,6 @@
 {
-  "1AtomDFTStrainRange": [0.75, 1.26],
-  "1AtomDFTStrainStep": 0.025,
+  "baseStrains": [0.75, 1.26],
+  "baseStrainStep": 0.025,
 
   "mdLatticeConfigs": [
     [1, 1, 1],
@@ -12,15 +12,23 @@
   ],
   "maxItersPerConfig": [50, 40, 40, 10, 10, 5],
 
-  "qeMemPerConfig": ["8G", "8G", "10G", "16G", "20G", "32G"],
+  "qeMemPerConfig": ["8G", "8G", "10G", "16G", "20G", "40G"],
   "qeCPUsPerConfig": [1, 1, 1, 1, 1, 1],
   "qeTimePerConfig": [
-    "0-0:30",
+    "0-1:00",
     "0-1:00",
     "0-2:00",
     "0-4:00",
-    "0-8:00",
-    "1-16:00"
+    "0-6:00",
+    "1-12:00"
+  ],
+  "kPoints": [
+    [8, 8, 8],
+    [8, 8, 4],
+    [8, 8, 3],
+    [8, 4, 4],
+    [4, 4, 4],
+    [3, 3, 3]
   ],
   "mdMemPerConfig": ["4G", "4G", "4G", "4G", "4G", "4G"],
   "mdCPUsPerConfig": [1, 1, 1, 1, 1, 1],
@@ -36,17 +44,20 @@
   "mdTemperatures": [100, 300, 400, 800],
   "mdStrainRange": [0.95, 1.06],
   "mdStrainStep": 0.02,
+  "mode": "nbh",
   "selectThreshold": 2.1,
   "breakThreshold": 10.0,
-  "mode": "cfg",
-  "includeVacancies": true,
   "mlpBinary": "/global/home/hpc5146/mlip-3/bin/mlp",
   "pseudopotentialDirectory": "/global/home/hpc5146",
-  "pseudopotential": "K.pbe-spn-kjpaw_psl.1.0.0.UPF",
   "lmpMPIFile": "/global/home/hpc5146/interface-lammps-mlip-3/lmp_mpi",
   "baseLatticeParameter": 5.2861900001694,
-  "baseEnergyReference": -1536.644847,
-  "baseKPoints": 8,
-  "ecutwfc": 60,
-  "ecutrho": 300
+  "baseEnergyReferences": [-1536.644847, -0.5],
+  "ecutwfc": 80,
+  "ecutrho": 400,
+  "elements": ["K", "Mg"],
+  "atomicWeights": [39.0983, 24.305],
+  "pseudopotentials": [
+    "K.pbe-spn-kjpaw_psl.1.0.0.UPF",
+    "Mg.pbe-spn-kjpaw_psl.1.0.0.UPF"
+  ]
 }
