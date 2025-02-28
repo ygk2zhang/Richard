@@ -27,10 +27,12 @@ def performParallelMDRuns(
     strains = []
     identifiers = []
 
-    for i in range(config["parallelMDRuns"]):
+    for j in range(config["parallelMDRuns"]):
         temperature = random.uniform(
             config["mdTemperatureRange"][0], config["mdTemperatureRange"][1]
         )
+        if i < 4:
+            temperature = config["mdTemperatureRange"][1]
         strain = random.uniform(config["mdStrainRange"][0], config["mdStrainRange"][1])
         identifiers.append(
             "".join(str(x) for x in cellDimensions)
@@ -42,10 +44,10 @@ def performParallelMDRuns(
         temperatures.append(temperature)
         strains.append(strain)
 
-    for i in range(config["parallelMDRuns"]):
-        temperature = temperatures[i]
-        strain = strains[i]
-        identifier = identifiers[i]
+    for j in range(config["parallelMDRuns"]):
+        temperature = temperatures[j]
+        strain = strains[j]
+        identifier = identifiers[j]
 
         workingFolder = os.path.join(mdFolder, identifier)
         os.mkdir(workingFolder)
@@ -87,10 +89,10 @@ def performParallelMDRuns(
     preselectedIterationLogs = {}
     cpuTimesSpent = []
 
-    for i in range(config["parallelMDRuns"]):
-        temperature = temperatures[i]
-        strain = strains[i]
-        identifier = identifiers[i]
+    for j in range(config["parallelMDRuns"]):
+        temperature = temperatures[j]
+        strain = strains[j]
+        identifier = identifiers[j]
         workingFolder = os.path.join(mdFolder, identifier)
         preselectedFile = os.path.join(workingFolder, "preselected.cfg.0")
 

@@ -250,8 +250,10 @@ def parsePartialMTPConfig(startIndex: int, fileLines: list) -> dict:
     atomPositions = infoArray[:, 2:5]
 
     # Extract MV_grade using regex
-    mv_grade_line_index = startIndex + 12 + numAtoms
-    mv_grade_match = re.search(r"MV_grade=(\d+\.?\d*)", fileLines[mv_grade_line_index])
+    mv_grade_line_index = startIndex + 8 + numAtoms
+    mv_grade_match = re.search(
+        r"Feature\s+MV_grade\s+([\d\.-]+)", fileLines[mv_grade_line_index]
+    )
     mv_grade = float(mv_grade_match.group(1)) if mv_grade_match else None
 
     return {
@@ -297,8 +299,10 @@ def parseMDTime(filename: str) -> float:
 
 
 if __name__ == "__main__":
-    print(
-        parseMTPConfigsFile(
-            "/global/home/hpc5146/Projects/KTraining/temporaryFiles/train.cfg", False
-        )
-    )
+
+    print(parsePartialMTPConfigsFile("preselected.cfg.0"))
+# print(
+#     parseMTPConfigsFile(
+#         "/global/home/hpc5146/Projects/KTraining/temporaryFiles/train.cfg", False
+#     )
+# )

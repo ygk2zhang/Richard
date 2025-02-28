@@ -181,6 +181,8 @@ def runActiveLearningScheme(
                 + str(round(np.max(mdCPUTimesSpent), 2))
                 + "s.",
             )
+            if sum(mdExitCodes) > 0 and not hasPreselected:
+                raise RuntimeError("MD run failed! Check MTP for sufficient species.")
             if not hasPreselected:
                 preselectedLogs.append(preselectedIterationLogs)
                 wr.printAndLog(
