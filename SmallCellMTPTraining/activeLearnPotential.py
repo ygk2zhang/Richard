@@ -16,8 +16,9 @@ from SmallCellMTPTraining.activeLearningSections.md import performParallelMDRuns
 
 
 def runActiveLearningScheme(
-    rootFolder: str, config: dict, mtpLevel="08", initial_pot=None
+    rootFolder: str, config: dict, mtpLevel="08", initial_train=None, initial_pot=None
 ):
+
     ### ===== Start by setting folders and file in the root folder =====
     rootFolder = os.path.abspath(rootFolder)  # Work in absolute paths where possible
     mtpFolder = os.path.join(rootFolder, "mtp")
@@ -59,18 +60,33 @@ def runActiveLearningScheme(
     existingArchiveFolders = os.listdir(dftArchiveFolder)
     is_resuming = len(existingArchiveFolders) > 0  # Check if we are resuming
 
-    if initial_pot and not is_resuming:
-        if not os.path.exists(initial_pot):  # Check that the inital pot exists
-            raise FileNotFoundError(f"Initial potential file not found: {initial_pot}")
-        wr.printAndLog(logFile, f"Using initial potential: {initial_pot}")
-        shutil.copyfile(initial_pot, potFile)  # Copy the specified initial potential
+    if not initial_train and initial_pot and not is_resuming:
+        raise ValueError(
+            "Unless resuming a run, you must provide an initial training set if an initial potential is provided!"
+        )
 
-    if not initial_pot and not is_resuming:
+    if initial_train and not is_resuming:
+        if not os.path.exists(initial_train):  # Check that the inital train exists
+            raise FileNotFoundError(
+                f"Initial potential file not found: {initial_train}"
+            )
+        wr.printAndLog(logFile, f"Using initial potential: {initial_train}")
+        shutil.copyfile(
+            initial_train, trainingFile
+        )  # Copy the specified initial training set
+        if initial_pot:
+            shutil.copyfile(
+                initial_pot, potFile
+            )  # Copy the specified initial training pot
+        else:
+            loadUntrainedMTP(potFile, mtpLevel)
+
+    if not initial_train and not is_resuming:
         if len(config["elements"]) > 1:
             raise ValueError(
-                "For multiple elements, an initial potential (`initial_pot`) MUST be provided."
+                "For multiple elements, an initial training set (`initial_train`) MUST be provided."
             )
-        # Single element, new run, no initial pot: load untrained and generate initial dataset
+        # Single element, new run, no initial training set
         loadUntrainedMTP(potFile, mtpLevel)
         wr.printAndLog(logFile, "Generating Initial Dataset.")
         initializationExitCodes = generateInitialDataset(
@@ -139,7 +155,9 @@ def runActiveLearningScheme(
             )
 
             ### ===== Train the MTP ====
-            if os.path.isfile(trainingFile):
+            if initial_pot:
+                initial_pot = None
+            else:
                 wr.printAndLog(logFile, "Starting Training Stage.")
                 avgEnergyError, avgForceError, trainingTime = trainMTP(
                     os.path.join(logsFolder, "train.qsub"),

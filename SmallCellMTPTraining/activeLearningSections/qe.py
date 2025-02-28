@@ -92,7 +92,6 @@ def calculateDiffConfigs(
     config: dict,
 ):
     newConfigs = pa.parsePartialMTPConfigsFile(diffFile)
-    cellDimensions = config["mdLatticeConfigs"][stage]
     kPoints = config["kPoints"][stage]
     subprocesses = []
 

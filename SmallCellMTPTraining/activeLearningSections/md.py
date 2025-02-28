@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import random
 import numpy as np
+import regex as re
 import time
 
 import SmallCellMTPTraining.io.writers as wr
@@ -27,22 +28,44 @@ def performParallelMDRuns(
     strains = []
     identifiers = []
 
+    seen_identifiers = set()
+
+    max_attempts = config["parallelMDRuns"] * 10
+    attempts = 0
+    # This guarentees no repeated temperature/ strains
     for j in range(config["parallelMDRuns"]):
-        temperature = random.uniform(
-            config["mdTemperatureRange"][0], config["mdTemperatureRange"][1]
-        )
-        if i < 4:
-            temperature = config["mdTemperatureRange"][1]
-        strain = random.uniform(config["mdStrainRange"][0], config["mdStrainRange"][1])
-        identifiers.append(
-            "".join(str(x) for x in cellDimensions)
-            + "_T"
-            + str(round(temperature, 3))
-            + "_S"
-            + str(round(strain, 3))
-        )
-        temperatures.append(temperature)
-        strains.append(strain)
+        while attempts < max_attempts:
+            attempts += 1
+            temperature = random.uniform(
+                config["mdTemperatureRange"][0], config["mdTemperatureRange"][1]
+            )
+            if j < 6:
+                temperature = config["mdTemperatureRange"][1]
+            strain = random.uniform(
+                config["mdStrainRange"][0], config["mdStrainRange"][1]
+            )
+            rounded_temperature = round(temperature, 0)
+            rounded_strain = round(strain, 3)
+
+            identifier = (
+                "".join(str(x) for x in cellDimensions)
+                + "_T"
+                + str(rounded_temperature)
+                + "_S"
+                + str(rounded_strain)
+            )
+
+            if identifier not in seen_identifiers:
+                seen_identifiers.add(identifier)
+                identifiers.append(identifier)
+                temperatures.append(temperature)
+                strains.append(strain)
+                break
+        else:
+            raise ValueError(
+                f"Failed to generate unique parameters after {max_attempts} attempts."
+            )
+        attempts = 0
 
     for j in range(config["parallelMDRuns"]):
         temperature = temperatures[j]
@@ -104,15 +127,13 @@ def performParallelMDRuns(
 
         if os.path.exists(preselectedFile):
             hasPreselected = True
-            preselected_configs = pa.parsePartialMTPConfigsFile(preselectedFile)
-            preselectedGrades = [
-                cfg["MV_grade"]
-                for cfg in preselected_configs
-                if cfg["MV_grade"] is not None
-            ]
-
-            with open(masterPreselectedFile, "a") as dest:
-                wr.writeMTPConfigs(dest, preselected_configs)
+            with open(preselectedFile, "r") as src:
+                content = src.read()
+                preselectedGrades = list(
+                    map(float, re.findall(r"(?<=MV_grade\t)\d+.?\d*", content))
+                )
+                with open(masterPreselectedFile, "a") as dest:
+                    dest.write(content)
 
         preselectedIterationLogs[identifier] = preselectedGrades
 

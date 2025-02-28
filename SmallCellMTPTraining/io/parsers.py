@@ -38,7 +38,7 @@ def parseQEOutput(fileName: str, convertToAngRy=True) -> dict:
             [extractAllNumbersFromString(x) for x in atomTypeAndForceStrings]
         )  # Extracts the numbers from the atom force line into an numpy array
         atomIDs = atomTypeAndForceFloats[:, 0]
-        atomTypes = atomTypeAndForceFloats[:, 1]
+        atomTypes = atomTypeAndForceFloats[:, 1].astype(int)
         atomForces = (
             atomTypeAndForceFloats[:, 2:] * energyConversion / distanceConversion
         )
@@ -50,7 +50,7 @@ def parseQEOutput(fileName: str, convertToAngRy=True) -> dict:
 
         # Get the atom position vectors
         positionVectorsStrings = re.findall(
-            r"\d\s*K   tau\(\s+\d+\) = \(\s*-?\d*\.?\d*\s*-?\d*\.?\d*\s*-?\d*\.?\d*  \)",
+            r"\d\s*[A-Za-z]+\s+tau\(\s+\d+\) = \(\s*-?\d*\.?\d*\s*-?\d*\.?\d*\s*-?\d*\.?\d*  \)",
             content,
         )
         # print(positionVectorsStrings)
@@ -185,7 +185,7 @@ def parseMTPConfig(startIndex: int, fileLines: list, convertFromAngRy=True) -> d
         infoArray[j] = np.array(fileLines[startIndex + 8 + j].split(), dtype=float)
 
     atomIDs = infoArray[:, 0]
-    atomTypes = infoArray[:, 1]
+    atomTypes = infoArray[:, 1].astype(int)
     atomPositions = infoArray[:, 2:5] * distanceConversion
     atomForces = infoArray[:, 5:] * energyConversion / distanceConversion
 
@@ -246,7 +246,7 @@ def parsePartialMTPConfig(startIndex: int, fileLines: list) -> dict:
         infoArray[j] = np.array(fileLines[startIndex + 8 + j].split(), dtype=float)[:5]
 
     atomIDs = infoArray[:, 0]
-    atomTypes = infoArray[:, 1]
+    atomTypes = infoArray[:, 1].astype(int)
     atomPositions = infoArray[:, 2:5]
 
     # Extract MV_grade using regex
@@ -300,7 +300,8 @@ def parseMDTime(filename: str) -> float:
 
 if __name__ == "__main__":
 
-    print(parsePartialMTPConfigsFile("preselected.cfg.0"))
+    # print(parsePartialMTPConfigsFile("preselected.cfg.0"))
+    print(parseQEOutput("1_0_0_0.out"))
 # print(
 #     parseMTPConfigsFile(
 #         "/global/home/hpc5146/Projects/KTraining/temporaryFiles/train.cfg", False

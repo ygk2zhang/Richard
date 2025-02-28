@@ -18,7 +18,7 @@ ecutwfc={ecut},
 ecutrho={erho}
 occupations='smearing',
 smearing = 'gaussian',
-degauss = 0.005,
+degauss = 0.01,
 /
 &electrons
 mixing_mode='plain',
@@ -105,7 +105,6 @@ fix		1 all nve
 fix		2 all langevin {ttt} {ttt} 0.1 826234 zero yes
 
 run             100000
-reset_timestep  0
 """
 
 trainJobTemplate = """#!/bin/bash
@@ -125,8 +124,10 @@ module load    cuda/11.6.1
 module load       StdEnv/2020  gcc/9.3.0
 module load openmpi/4.0.3
 
-/usr/bin/time -o {timeFile} -f "%e" mpirun -np {cpus} --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train {pot} {train} --iteration_limit=10000 --tolerance=0.000001 --init_random={init} --al_mode={mode}
+/usr/bin/time -o {timeFile} -f "%e" mpirun -np {cpus} --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train {pot} {train} --init_random={init} --al_mode={mode}
 """
+# Alternative with tight tolerance and more iters
+# /usr/bin/time -o {timeFile} -f "%e" mpirun -np {cpus} --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train {pot} {train} --iteration_limit=10000 --tolerance=0.000001 --init_random={init} --al_mode={mode}
 
 selectJobTemplate = """#!/bin/bash
 #SBATCH --account=def-hpcg1725
