@@ -12,8 +12,8 @@
   ],
   "maxItersPerConfig": [50, 40, 40, 10, 10, 5],
 
-  "qeMemPerConfig": ["8G", "8G", "10G", "16G", "20G", "40G"],
-  "qeCPUsPerConfig": [1, 1, 1, 1, 1, 1],
+  "qeMemPerConfig": ["8G", "8G", "8G", "8G", "8G", "8G"],
+  "qeCPUsPerConfig": [2, 2, 2, 2, 4, 6],
   "qeTimePerConfig": [
     "0-1:00",
     "0-1:00",
@@ -41,23 +41,23 @@
     "0-1:00"
   ],
 
-  "mdTemperatures": [100, 300, 400, 800],
-  "mdStrainRange": [0.95, 1.06],
-  "mdStrainStep": 0.02,
-  "mode": "nbh",
+  "parallelMDRuns": 24,
+  "mdTemperatureRange": [100, 600],
+  "mdStrainRange": [0.95, 1.05],
+  "mode": "cfg",
   "selectThreshold": 2.1,
   "breakThreshold": 10.0,
   "mlpBinary": "/global/home/hpc5146/mlip-3/bin/mlp",
   "pseudopotentialDirectory": "/global/home/hpc5146",
   "lmpMPIFile": "/global/home/hpc5146/interface-lammps-mlip-3/lmp_mpi",
-  "baseLatticeParameter": 5.2861900001694,
-  "baseEnergyReferences": [-1536.644847, -0.5],
-  "ecutwfc": 80,
-  "ecutrho": 400,
-  "elements": ["K", "Mg"],
-  "atomicWeights": [39.0983, 24.305],
+  "baseLatticeParameter": 4.76757,
+  "baseEnergyReferences": [-1536.644847, -1485.20896221133],
+  "ecutwfc": 90,
+  "ecutrho": 450,
+  "elements": ["K", "Na"],
+  "atomicWeights": [39.0983, 22.989769],
   "pseudopotentials": [
     "K.pbe-spn-kjpaw_psl.1.0.0.UPF",
-    "Mg.pbe-spn-kjpaw_psl.1.0.0.UPF"
+    "Na.pbe-spn-kjpaw_psl.1.0.0.UPF"
   ]
 }

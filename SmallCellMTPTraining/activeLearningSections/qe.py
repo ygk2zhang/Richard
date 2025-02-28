@@ -23,7 +23,7 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, params: dict):
 
     jobProperties = {
         "ncpus": 1,
-        "maxDuration": "0-1:20",
+        "maxDuration": "0-2:00",
         "memPerCpu": "8G",
     }
 

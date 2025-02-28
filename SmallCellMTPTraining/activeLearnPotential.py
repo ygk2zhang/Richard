@@ -27,6 +27,7 @@ def runActiveLearningScheme(
     dftOutputsFolder = os.path.join(rootFolder, "dftOutputs")
     dftArchiveFolder = os.path.join(rootFolder, "dftArchive")
     logsFolder = os.path.join(rootFolder, "logs")
+    oldPotFolder = os.path.join(rootFolder, "oldPot")
 
     for folder in [
         rootFolder,
@@ -36,6 +37,7 @@ def runActiveLearningScheme(
         dftOutputsFolder,
         dftArchiveFolder,
         logsFolder,
+        oldPotFolder,
     ]:
         if not os.path.exists(folder):
             os.mkdir(folder)
@@ -176,6 +178,14 @@ def runActiveLearningScheme(
                 wr.printAndLog(
                     logFile, "Average Force Per Atom Error: " + avgForceError
                 )
+                # Store an archive of the last trained potential
+                shutil.copyfile(
+                    os.path.join(
+                        oldPotFolder,
+                        str(attempt) + "_" + str(stage) + "_" + str(iteration),
+                    ),
+                    potFile,
+                )
 
             ### ===== Perform the MD active learning runs
             wr.printAndLog(logFile, "Starting MD Runs.")
@@ -258,5 +268,3 @@ def runActiveLearningScheme(
                 str(attempt) + "_" + str(stage) + "_" + str(iteration),
                 config,
             )
-
-            pass
