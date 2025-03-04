@@ -180,11 +180,11 @@ def runActiveLearningScheme(
                 )
                 # Store an archive of the last trained potential
                 shutil.copyfile(
+                    potFile,
                     os.path.join(
                         oldPotFolder,
                         str(attempt) + "_" + str(stage) + "_" + str(iteration),
                     ),
-                    potFile,
                 )
 
             ### ===== Perform the MD active learning runs
