@@ -13,33 +13,44 @@ from SmallCellMTPTraining.io import writers as wr
 from SmallCellMTPTraining.io import parsers as pa
 
 
-def generateInitialDataset(inputFolder: str, outputFolder: str, params: dict):
+def generateInitialDataset(inputFolder: str, outputFolder: str, config: dict):
     # Extract the base data sets from the configurations
     baseStrains = np.arange(
-        params["baseStrains"][0],
-        params["baseStrains"][1],
-        params["baseStrainStep"],
+        config["baseStrains"][0],
+        config["baseStrains"][1],
+        config["baseStrainStep"],
     )
 
-    jobProperties = {
-        "ncpus": 1,
-        "maxDuration": "0-2:00",
-        "memPerCpu": "8G",
-    }
-
+    maxCPUs = len(os.sched_getaffinity(0)) - 1
+    coresPerQE = 1
+    cpusUsed = 0
+    os.environ["OMP_NUM_THREADS"] = str(coresPerQE)
+    os.environ["OMP_PROC_BIND"] = "TRUE"
+    os.environ["OMP_PLACES"] = "cores"
     subprocesses = []
+    exitCodes = []
+    completed = set()
 
-    # Generate and submit the 1Atom Strain runs
+    # Generate and submit the hydrostatic strain runs
     for strain in baseStrains:
+
+        # This is essentially a primitive scheduler/semaphore
+        if cpusUsed + coresPerQE > maxCPUs:
+            available = False
+            while not available:
+                time.sleep(1)
+                for i, p in enumerate(subprocesses):
+                    if i in completed:
+                        continue
+                    exitCode = p.poll()
+                    if not exitCode == None:
+                        available = True
+                        cpusUsed -= coresPerQE
+                        completed.add(i)
+
         workingFolder = os.path.join(inputFolder, "baseStrain" + str(round(strain, 3)))
         inputFile = os.path.join(
             workingFolder, "baseStrain" + str(round(strain, 3)) + ".in"
-        )
-        jobFile = os.path.join(
-            workingFolder, "baseStrain" + str(round(strain, 3)) + ".qsub"
-        )
-        runFile = os.path.join(
-            workingFolder, "baseStrain" + str(round(strain, 3)) + ".run"
         )
         outputFile = os.path.join(
             outputFolder, "baseStrain" + str(round(strain, 3)) + ".out"
@@ -49,34 +60,44 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, params: dict):
 
         # Prepare QE input properties
         qeProperties = {
-            "atomPositions": np.array([[0, 0, 0], [0.5, 0.5, 0.5]]),
+            "atomPositions": np.array(
+                [
+                    [0, 0, 0],
+                    [
+                        0.5 * config["baseLatticeParameter"],
+                        0.5 * config["baseLatticeParameter"],
+                        0.5 * config["baseLatticeParameter"],
+                    ],
+                ]
+            ),
             "atomTypes": [0, 0],
             "superCell": np.array(
                 [
-                    [strain * params["baseLatticeParameter"], 0, 0],
-                    [0, strain * params["baseLatticeParameter"], 0],
-                    [0, 0, strain * params["baseLatticeParameter"]],
+                    [strain * config["baseLatticeParameter"], 0, 0],
+                    [0, strain * config["baseLatticeParameter"], 0],
+                    [0, 0, strain * config["baseLatticeParameter"]],
                 ]
             ),
-            "kPoints": [12, 12, 12],
+            "kPoints": [10, 10, 10],
             "ecutwfc": 90,
             "ecutrho": 450,
             "qeOutDir": workingFolder,
-            "elements": params["elements"],
-            "atomicWeights": params["atomicWeights"],
-            "pseudopotentials": params["pseudopotentials"],
+            "elements": config["elements"],
+            "atomicWeights": config["atomicWeights"],
+            "pseudopotentials": config["pseudopotentials"],
+            "pseudopotentialDirectory": config["pseudopotentialDirectory"],
         }
-        # Prepare the job file
-        jobProperties["jobName"] = "baseStrain" + str(round(strain, 3))
-        jobProperties["inFile"] = inputFile
-        jobProperties["outFile"] = outputFile
-        jobProperties["runFile"] = runFile
 
-        # Write the input and the run file
-        wr.writeQEInput(inputFile, qeProperties)  # Use writeQEInput
-        wr.writeQEJob(jobFile, jobProperties)
-
-        subprocesses.append(subprocess.Popen(["sbatch", jobFile]))
+        # Write the input and run
+        wr.writeQEInput(inputFile, qeProperties)
+        cpusUsed += coresPerQE
+        subprocesses.append(
+            subprocess.Popen(
+                "mpirun -np 1 pw.x -in " + inputFile + " > " + outputFile,
+                shell=True,
+                cwd=workingFolder,
+            ),
+        )
 
     exitCodes = [p.wait() for p in subprocesses]
     return exitCodes
