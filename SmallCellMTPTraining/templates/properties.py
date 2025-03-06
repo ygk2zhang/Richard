@@ -9,6 +9,7 @@ qeProperties = [
     "elements",
     "atomicWeights",
     "pseudopotentials",
+    "pseudopotentialDirectory",
 ]
 calcJobProperties = [
     "jobName",

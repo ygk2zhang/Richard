@@ -20,7 +20,9 @@ def trainMTP(
         + timeFile
         + ' -f "%e" mpirun -np '
         + str(maxCPUs)
-        + " --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train "
+        + " --oversubscribe "
+        + config["mlpBinary"]
+        + " train "
         + potFile
         + " "
         + trainingFIle
@@ -51,6 +53,7 @@ def selectDiffConfigs(
     trainingFile: str,
     preselectedFile: str,
     diffFile: str,
+    config: str,
 ):
     timeFile = os.path.join(logsFolder, "selectAdd.time")
     maxCPUs = min(len(os.sched_getaffinity(0)) - 1, 11)
@@ -66,7 +69,7 @@ def selectDiffConfigs(
             "-np",
             str(maxCPUs),
             "--oversubscribe",
-            "/global/home/hpc5146/mlip-3/bin/mlp",
+            config["mlpBinary"],
             "select_add",
             potFile,
             trainingFile,

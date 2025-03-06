@@ -279,8 +279,32 @@ def parsePartialMTPConfigsFile(filename: str) -> list:
 
 
 def parseTimeFile(filename: str) -> float:
-    with open(filename, "r") as f:
-        return float(f.read())
+    try:
+        with open(filename, "r") as f:
+            content = f.read()
+
+        # Check if there is an error in the time file
+        error_match = re.match(r"Command exited with non-zero status (\d+)", content)
+        if error_match:
+            status_code = int(error_match.group(1))
+            if status_code not in (0, 9):
+                raise RuntimeError(
+                    f"Command exited with unexpected status: {status_code}"
+                )
+
+            # If status is 0 or 9, we can proceeed
+            time_str = content.replace(error_match.group(0), "").strip()
+            if not time_str:  # Check if now is empty
+                raise ValueError("Time value not found after removing error message.")
+            return float(time_str)
+        else:  # If no error, just convert to float
+            content = content.strip()
+            if not content:
+                raise ValueError("File is empty")
+            return float(content)
+
+    except FileNotFoundError:
+        raise FileNotFoundError(f"File not found: '{filename}'")
 
 
 def parseMDTime(filename: str) -> float:

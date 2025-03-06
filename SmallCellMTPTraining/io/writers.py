@@ -30,6 +30,7 @@ def writeQEInput(fileName: str, taskProperties: dict) -> str:
         "elements",
         "atomicWeights",
         "pseudopotentials",
+        "pseudopotentialDirectory",
     ]
     """
     properties = props.qeProperties
@@ -77,6 +78,7 @@ def writeQEInput(fileName: str, taskProperties: dict) -> str:
         erho=taskProperties["ecutrho"],
         atomic_species=atomic_species_str,
         aaa=atomPositions,
+        pseudopotentialDirectory=taskProperties["pseudopotentialDirectory"],
     )
 
     with open(fileName, "w") as f:

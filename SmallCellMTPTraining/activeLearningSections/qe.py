@@ -96,7 +96,7 @@ def calculateDiffConfigs(
     maxCPUs = len(os.sched_getaffinity(0)) - 1
     coresPerQE = config["qeCPUsPerConfig"][stage]
     cpusUsed = 0
-    os.environ["OMP_NUM_THREADS"] = 1
+    os.environ["OMP_NUM_THREADS"] = str(coresPerQE)
     os.environ["OMP_PROC_BIND"] = "TRUE"
     os.environ["OMP_PLACES"] = "cores"
 
@@ -139,6 +139,7 @@ def calculateDiffConfigs(
             "elements": config["elements"],
             "atomicWeights": config["atomicWeights"],
             "pseudopotentials": config["pseudopotentials"],
+            "pseudopotentialDirectory": config["pseudopotentialDirectory"],
         }
 
         wr.writeQEInput(qeFile, qeProperties)

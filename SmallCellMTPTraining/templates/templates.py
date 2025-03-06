@@ -6,7 +6,7 @@ disk_io = 'none',
 prefix = 'diffDFT',
 calculation ='scf',
 outdir = '{out}',
-pseudo_dir = '/global/home/hpc5146',
+pseudo_dir = '{pseudopotentialDirectory}',
 tstress = .true.
 tprnfor = .true.
 /

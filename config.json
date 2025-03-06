@@ -12,7 +12,7 @@
   ],
   "maxItersPerConfig": [50, 40, 40, 10, 10, 5],
 
-  "qeCPUsPerConfig": [2, 2, 2, 2, 4, 5],
+  "qeCPUsPerConfig": [1, 2, 4, 4, 6, 10],
   "kPoints": [
     [8, 8, 8],
     [8, 8, 4],
@@ -27,9 +27,9 @@
   "mode": "cfg",
   "selectThreshold": 2.1,
   "breakThreshold": 10.0,
-  "mlpBinary": "/global/home/hpc5146/mlip-3/bin/mlp",
-  "pseudopotentialDirectory": "/global/home/hpc5146",
-  "lmpMPIFile": "/global/home/hpc5146/interface-lammps-mlip-3/lmp_mpi",
+  "mlpBinary": "/home/zjm/scratch/mlip-3/bin/mlp",
+  "pseudopotentialDirectory": "/home/zjm/scratch/pseudos",
+  "lmpMPIFile": "/home/zjm/scratch/interface-lammps-mlip-3/lmp_mpi",
   "baseLatticeParameter": 5.2861900001694,
   "baseEnergyReferences": [-1536.644847],
   "ecutwfc": 60,

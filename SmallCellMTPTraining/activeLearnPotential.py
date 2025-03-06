@@ -228,6 +228,7 @@ def runActiveLearningScheme(
                 trainingFile,
                 masterPreselectedFile,
                 diffFile,
+                config,
             )
             wr.printAndLog(
                 logFile, "Selection Completed; Wall time: " + str(selectTime) + "s"

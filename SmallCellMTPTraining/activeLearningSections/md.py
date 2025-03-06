@@ -110,7 +110,7 @@ def performParallelMDRuns(
                     "mpirun",
                     "-np",
                     "1",
-                    "/global/home/hpc5146/interface-lammps-mlip-3/lmp_mpi",
+                    config["lmpMPIFile"],
                     "-in",
                     mdFile,
                     "-log",
@@ -123,6 +123,9 @@ def performParallelMDRuns(
         )
 
     exitCodes = [p.wait() for p in subprocesses]
+    for exitCode in exitCodes:
+        if exitCode != 0 and exitCode != 9:
+            raise RuntimeError("MD runs have failed!")
     preselectedIterationLogs = {}
     cpuTimesSpent = []
 
