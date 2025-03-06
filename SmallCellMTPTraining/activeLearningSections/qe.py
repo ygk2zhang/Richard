@@ -93,19 +93,41 @@ def calculateDiffConfigs(
 ):
     newConfigs = pa.parsePartialMTPConfigsFile(diffFile)
     kPoints = config["kPoints"][stage]
+    maxCPUs = len(os.sched_getaffinity(0)) - 1
+    coresPerQE = config["qeCPUsPerConfig"][stage]
+    cpusUsed = 0
+    os.environ["OMP_NUM_THREADS"] = 1
+    os.environ["OMP_PROC_BIND"] = "TRUE"
+    os.environ["OMP_PLACES"] = "cores"
+
     subprocesses = []
+    exitCodes = []
+    completed = set()
 
     for j, newConfig in enumerate(newConfigs):
+
+        # This is essentially a primitive scheduler/semaphore
+        if cpusUsed + coresPerQE > maxCPUs:
+            available = False
+            while not available:
+                time.sleep(1)
+                for i, p in enumerate(subprocesses):
+                    if i in completed:
+                        continue
+                    exitCode = p.poll()
+                    if not exitCode == None:
+                        available = True
+                        cpusUsed -= coresPerQE
+                        completed.add(i)
+
         identifier = (
             str(attempt) + "_" + str(stage) + "_" + str(iteration) + "_" + str(j)
         )
         workingFolder = os.path.join(inputFolder, identifier)
         os.mkdir(workingFolder)
         qeFile = os.path.join(workingFolder, identifier + ".in")
-        runFile = os.path.join(workingFolder, identifier + ".run")
         outFile = os.path.join(outputFolder, identifier + ".out")
-        jobFile = os.path.join(workingFolder, identifier + ".qsub")
-        # Added element information
+
         qeProperties = {
             "atomPositions": newConfig["atomPositions"],
             "atomTypes": newConfig["atomTypes"],
@@ -119,20 +141,15 @@ def calculateDiffConfigs(
             "pseudopotentials": config["pseudopotentials"],
         }
 
-        jobProperties = {
-            "jobName": identifier,
-            "ncpus": config["qeCPUsPerConfig"][stage],
-            "memPerCpu": config["qeMemPerConfig"][stage],
-            "maxDuration": config["qeTimePerConfig"][stage],
-            "inFile": qeFile,
-            "outFile": outFile,
-            "runFile": runFile,
-        }
-
         wr.writeQEInput(qeFile, qeProperties)
-        wr.writeQEJob(jobFile, jobProperties)
-        subprocesses.append(subprocess.Popen(["sbatch", jobFile]))
-        time.sleep(0.1)
+        cpusUsed += coresPerQE
+        subprocesses.append(
+            subprocess.Popen(
+                "mpirun -np 1 pw.x -in " + qeFile + " > " + outFile,
+                shell=True,
+                cwd=workingFolder,
+            ),
+        )
 
     exitCodes = [p.wait() for p in subprocesses]
 

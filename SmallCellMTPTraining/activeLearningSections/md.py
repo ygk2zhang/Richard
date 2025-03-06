@@ -21,25 +21,34 @@ def performParallelMDRuns(
     shutil.rmtree(mdFolder)
     os.mkdir(mdFolder)
 
+    os.environ["OMP_NUM_THREADS"] = "1"
+
+    maxCPUs = len(os.sched_getaffinity(0)) - 1
     cellDimensions = config["mdLatticeConfigs"][i]
     hasPreselected = False
     subprocesses = []
     temperatures = []
     strains = []
     identifiers = []
+    exitCodes = []
 
     seen_identifiers = set()
 
-    max_attempts = config["parallelMDRuns"] * 10
+    max_attempts = 10
     attempts = 0
+
+    maxTempThreshold = max(
+        6, int(maxCPUs / 4)
+    )  # Run a fourth of them at max temp, at least 6
+
     # This guarentees no repeated temperature/ strains
-    for j in range(config["parallelMDRuns"]):
+    for j in range(maxCPUs):
         while attempts < max_attempts:
             attempts += 1
             temperature = random.uniform(
                 config["mdTemperatureRange"][0], config["mdTemperatureRange"][1]
             )
-            if j < 6:
+            if j < maxTempThreshold:
                 temperature = config["mdTemperatureRange"][1]
             strain = random.uniform(
                 config["mdStrainRange"][0], config["mdStrainRange"][1]
@@ -67,7 +76,7 @@ def performParallelMDRuns(
             )
         attempts = 0
 
-    for j in range(config["parallelMDRuns"]):
+    for j in range(maxCPUs):
         temperature = temperatures[j]
         strain = strains[j]
         identifier = identifiers[j]
@@ -75,9 +84,7 @@ def performParallelMDRuns(
         workingFolder = os.path.join(mdFolder, identifier)
         os.mkdir(workingFolder)
         mdFile = os.path.join(workingFolder, identifier + ".in")
-        runFile = os.path.join(workingFolder, identifier + ".run")
         outFile = os.path.join(workingFolder, identifier + ".out")
-        jobFile = os.path.join(workingFolder, identifier + ".qsub")
         timeFile = os.path.join(workingFolder, identifier + ".time")
 
         latticeParameter = config["baseLatticeParameter"] * strain
@@ -91,28 +98,35 @@ def performParallelMDRuns(
             "atomicWeights": config["atomicWeights"],
         }
 
-        jobProperties = {
-            "jobName": identifier,
-            "ncpus": config["mdCPUsPerConfig"][i],
-            "memPerCpu": config["mdMemPerConfig"][i],
-            "maxDuration": config["mdTimePerConfig"][i],
-            "inFile": mdFile,
-            "outFile": outFile,
-            "runFile": runFile,
-            "timeFile": timeFile,
-        }
-
         wr.writeMDInput(mdFile, mdProperties)
-        wr.writeMDJob(jobFile, jobProperties)
-        subprocesses.append(subprocess.Popen(["sbatch", jobFile]))
-        time.sleep(0.1)
+        subprocesses.append(
+            subprocess.Popen(
+                [
+                    "/usr/bin/time",
+                    "-o",
+                    timeFile,
+                    "-f",
+                    "%e",
+                    "mpirun",
+                    "-np",
+                    "1",
+                    "/global/home/hpc5146/interface-lammps-mlip-3/lmp_mpi",
+                    "-in",
+                    mdFile,
+                    "-log",
+                    outFile,
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=workingFolder,
+            )
+        )
 
     exitCodes = [p.wait() for p in subprocesses]
-
     preselectedIterationLogs = {}
     cpuTimesSpent = []
 
-    for j in range(config["parallelMDRuns"]):
+    for j in range(maxCPUs):
         temperature = temperatures[j]
         strain = strains[j]
         identifier = identifiers[j]

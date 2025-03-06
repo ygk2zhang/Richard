@@ -243,6 +243,7 @@ def runActiveLearningScheme(
             os.remove(masterPreselectedFile)
 
             ### ===== Calculate the Needed Configurations Using Quantum Espresso =====
+            wr.printAndLog(logFile, "Starting new DFT calculations!")
             qeExitCodes, dftCPUTimesSpent = calculateDiffConfigs(
                 dftInputsFolder,
                 dftOutputsFolder,

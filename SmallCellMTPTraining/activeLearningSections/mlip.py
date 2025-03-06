@@ -12,21 +12,24 @@ def trainMTP(
 ):
     runFile = os.path.join(logsFolder, "train.out")
     timeFile = os.path.join(logsFolder, "train.time")
-    jobProperties = {
-        "jobName": "train",
-        "ncpus": 12,
-        "runFile": runFile,
-        "timeFile": timeFile,
-        "maxDuration": "0-6:00",
-        "memPerCpu": "4G",
-        "potFile": potFile,
-        "trainFile": trainingFIle,
-        "initRandom": "false",
-        "mode": config["mode"],
-    }
 
-    wr.writeTrainJob(jobFile, jobProperties)
-    subprocess.Popen(["sbatch", jobFile]).wait()
+    maxCPUs = min(len(os.sched_getaffinity(0)) - 1, 23)
+
+    subprocess.Popen(
+        "/usr/bin/time -o "
+        + timeFile
+        + ' -f "%e" mpirun -np '
+        + str(maxCPUs)
+        + " --oversubscribe  /global/home/hpc5146/mlip-3/bin/mlp train "
+        + potFile
+        + " "
+        + trainingFIle
+        + " --iteration_limit=10000 --tolerance=0.000001 --init_random=false --al_mode="
+        + config["mode"]
+        + " > "
+        + runFile,
+        shell=True,
+    ).wait()
 
     with open(runFile, "r") as txtfile:
         lines = txtfile.readlines()
@@ -50,21 +53,28 @@ def selectDiffConfigs(
     diffFile: str,
 ):
     timeFile = os.path.join(logsFolder, "selectAdd.time")
-    jobProperties = {
-        "jobName": "selectAdd",
-        "ncpus": 2,
-        "runFile": os.path.join(logsFolder, "selectAdd.out"),
-        "timeFile": timeFile,
-        "maxDuration": "0-1:00",
-        "memPerCpu": "6G",
-        "potFile": potFile,
-        "trainFile": trainingFile,
-        "preselectedFile": preselectedFile,
-        "diffFile": diffFile,
-    }
+    maxCPUs = min(len(os.sched_getaffinity(0)) - 1, 11)
 
-    wr.writeSelectJob(jobFile, jobProperties)
-    subprocess.Popen(["sbatch", jobFile]).wait()
+    subprocess.Popen(
+        [
+            "/usr/bin/time",
+            "-o",
+            timeFile,
+            "-f",
+            "%e",
+            "mpirun",
+            "-np",
+            str(maxCPUs),
+            "--oversubscribe",
+            "/global/home/hpc5146/mlip-3/bin/mlp",
+            "select_add",
+            potFile,
+            trainingFile,
+            preselectedFile,
+            diffFile,
+        ],
+        stdout=subprocess.PIPE,
+    ).wait()
 
     timeSpent = pa.parseTimeFile(timeFile)
 
