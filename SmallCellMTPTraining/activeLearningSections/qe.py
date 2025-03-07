@@ -62,9 +62,9 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, config: dict):
                 [
                     [0, 0, 0],
                     [
-                        0.5 * config["baseLatticeParameter"],
-                        0.5 * config["baseLatticeParameter"],
-                        0.5 * config["baseLatticeParameter"],
+                        0.5 * config["baseLatticeParameter"] * strain,
+                        0.5 * config["baseLatticeParameter"] * strain,
+                        0.5 * config["baseLatticeParameter"] * strain,
                     ],
                 ]
             ),
