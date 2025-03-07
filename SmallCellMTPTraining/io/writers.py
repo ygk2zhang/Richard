@@ -175,7 +175,7 @@ def writeMDJob(fileName: str, jobProperties: dict):
 
 def writeMDInput(fileName: str, jobProperties: dict):
     """Creates a MD Input, needing:
-    mdProperties = ["latticeParameter", "boxDimensions", "potFile", "temperature", "elements", "atomicWeights"]
+    mdProperties = ["latticeParameter", "boxDimensions", "potFile", "temperature", "pressure","elements", "atomicWeights"]
     """
     properties = props.mdProperties
     if checkProperties(properties, jobProperties):
@@ -251,6 +251,7 @@ def writeMDInput(fileName: str, jobProperties: dict):
     newMDInput = templates.mdInputTemplate.format(
         base=jobProperties["latticeParameter"],
         ttt=jobProperties["temperature"],
+        ppp=jobProperties["pressure"],
         pot=jobProperties["potFile"],
         xdim=jobProperties["boxDimensions"][0],
         ydim=jobProperties["boxDimensions"][1],

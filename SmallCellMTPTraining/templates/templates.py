@@ -101,8 +101,7 @@ thermo 1000
 
 {create_atoms_block}
 
-fix		1 all nve
-fix		2 all langevin {ttt} {ttt} 0.1 826234 zero yes
+fix     1 all npt temp {ttt} {ttt} 0.1 iso {ppp} {ppp} 1
 
 run             100000
 """

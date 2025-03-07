@@ -25,6 +25,7 @@ mdProperties = [
     "boxDimensions",
     "potFile",
     "temperature",
+    "pressure",
     "elements",
     "atomicWeights",
 ]

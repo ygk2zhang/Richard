@@ -28,7 +28,7 @@ def performParallelMDRuns(
     hasPreselected = False
     subprocesses = []
     temperatures = []
-    strains = []
+    pressures = []
     identifiers = []
     exitCodes = []
 
@@ -50,25 +50,25 @@ def performParallelMDRuns(
             )
             if j < maxTempThreshold:
                 temperature = config["mdTemperatureRange"][1]
-            strain = random.uniform(
-                config["mdStrainRange"][0], config["mdStrainRange"][1]
+            pressure = random.uniform(
+                config["mdPressureRange"][0], config["mdPressureRange"][1]
             )
-            rounded_temperature = round(temperature, 0)
-            rounded_strain = round(strain, 3)
+            rounded_temperature = round(temperature)
+            rounded_pressure = round(pressure)
 
             identifier = (
                 "".join(str(x) for x in cellDimensions)
                 + "_T"
                 + str(rounded_temperature)
                 + "_S"
-                + str(rounded_strain)
+                + str(rounded_pressure)
             )
 
             if identifier not in seen_identifiers:
                 seen_identifiers.add(identifier)
                 identifiers.append(identifier)
                 temperatures.append(temperature)
-                strains.append(strain)
+                pressures.append(pressure)
                 break
         else:
             raise ValueError(
@@ -78,7 +78,7 @@ def performParallelMDRuns(
 
     for j in range(maxCPUs):
         temperature = temperatures[j]
-        strain = strains[j]
+        pressure = pressures[j]
         identifier = identifiers[j]
 
         workingFolder = os.path.join(mdFolder, identifier)
@@ -87,11 +87,12 @@ def performParallelMDRuns(
         outFile = os.path.join(workingFolder, identifier + ".out")
         timeFile = os.path.join(workingFolder, identifier + ".time")
 
-        latticeParameter = config["baseLatticeParameter"] * strain
+        latticeParameter = config["baseLatticeParameter"]
 
         mdProperties = {
             "latticeParameter": latticeParameter,
             "temperature": temperature,
+            "pressure": pressure,
             "potFile": potFile,
             "boxDimensions": config["mdLatticeConfigs"][i],
             "elements": config["elements"],
@@ -132,8 +133,6 @@ def performParallelMDRuns(
     cpuTimesSpent = []
 
     for j in range(maxCPUs):
-        temperature = temperatures[j]
-        strain = strains[j]
         identifier = identifiers[j]
         workingFolder = os.path.join(mdFolder, identifier)
         preselectedFile = os.path.join(workingFolder, "preselected.cfg.0")
