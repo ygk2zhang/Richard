@@ -24,9 +24,7 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, config: dict):
     maxCPUs = len(os.sched_getaffinity(0)) - 1
     coresPerQE = 1
     cpusUsed = 0
-    os.environ["OMP_NUM_THREADS"] = str(coresPerQE)
-    os.environ["OMP_PROC_BIND"] = "TRUE"
-    os.environ["OMP_PLACES"] = "cores"
+    os.environ["OMP_NUM_THREADS"] = "1"
     subprocesses = []
     exitCodes = []
     completed = set()
@@ -93,7 +91,12 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, config: dict):
         cpusUsed += coresPerQE
         subprocesses.append(
             subprocess.Popen(
-                "mpirun -np 1 pw.x -in " + inputFile + " > " + outputFile,
+                "mpirun -np "
+                + str(coresPerQE)
+                + " --bind-to none pw.x -in "
+                + inputFile
+                + " > "
+                + outputFile,
                 shell=True,
                 cwd=workingFolder,
             ),
@@ -117,9 +120,7 @@ def calculateDiffConfigs(
     maxCPUs = len(os.sched_getaffinity(0)) - 1
     coresPerQE = config["qeCPUsPerConfig"][stage]
     cpusUsed = 0
-    os.environ["OMP_NUM_THREADS"] = str(coresPerQE)
-    os.environ["OMP_PROC_BIND"] = "TRUE"
-    os.environ["OMP_PLACES"] = "cores"
+    os.environ["OMP_NUM_THREADS"] = "1"
 
     subprocesses = []
     exitCodes = []
@@ -167,7 +168,12 @@ def calculateDiffConfigs(
         cpusUsed += coresPerQE
         subprocesses.append(
             subprocess.Popen(
-                "mpirun -np 1 pw.x -in " + qeFile + " > " + outFile,
+                "mpirun -np "
+                + str(coresPerQE)
+                + " --bind-to none pw.x -in "
+                + qeFile
+                + " > "
+                + outFile,
                 shell=True,
                 cwd=workingFolder,
             ),

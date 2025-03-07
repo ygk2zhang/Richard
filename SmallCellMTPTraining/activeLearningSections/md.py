@@ -110,6 +110,8 @@ def performParallelMDRuns(
                     "mpirun",
                     "-np",
                     "1",
+                    "--bind-to",
+                    "none",
                     config["lmpMPIFile"],
                     "-in",
                     mdFile,

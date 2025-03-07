@@ -20,7 +20,7 @@ def trainMTP(
         + timeFile
         + ' -f "%e" mpirun -np '
         + str(maxCPUs)
-        + " --oversubscribe "
+        + " --bind-to none --oversubscribe "
         + config["mlpBinary"]
         + " train "
         + potFile
@@ -69,6 +69,8 @@ def selectDiffConfigs(
             "-np",
             str(maxCPUs),
             "--oversubscribe",
+            "--bind-to",
+            "none",
             config["mlpBinary"],
             "select_add",
             potFile,
