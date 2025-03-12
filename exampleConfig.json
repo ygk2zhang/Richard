@@ -1,0 +1,40 @@
+{
+  "baseStrains": [0.75, 1.26],
+  "baseStrainStep": 0.025,
+
+  "mdLatticeConfigs": [
+    [1, 1, 1],
+    [1, 1, 2],
+    [1, 1, 3],
+    [1, 2, 2],
+    [2, 2, 2],
+    [3, 3, 3]
+  ],
+  "maxItersPerConfig": [50, 40, 40, 10, 10, 5],
+
+  "qeCPUsPerConfig": [1, 1, 2, 3, 3, 7],
+  "kPoints": [
+    [8, 8, 8],
+    [8, 8, 4],
+    [8, 8, 3],
+    [8, 4, 4],
+    [4, 4, 4],
+    [3, 3, 3]
+  ],
+
+  "mdTemperatureRange": [100, 800],
+  "mdPressureRange": [0, 5000],
+  "mode": "cfg",
+  "selectThreshold": 2.1,
+  "breakThreshold": 10.0,
+  "mlpBinary": "/home/zjm/scratch/mlip-3/bin/mlp",
+  "pseudopotentialDirectory": "/home/zjm/scratch/pseudos",
+  "lmpMPIFile": "/home/zjm/scratch/interface-lammps-mlip-3/lmp_mpi",
+  "baseLatticeParameter": 4.76757,
+  "baseEnergyReferences": [-1485.20896221133, -1536.644847],
+  "ecutwfc": 90,
+  "ecutrho": 450,
+  "elements": ["Na", "K"],
+  "atomicWeights": [22.989769, 39.0983],
+  "pseudopotentials": ["Na.pbe-spn-kjpaw_psl.1.0.0.UPF","K.pbe-spn-kjpaw_psl.1.0.0.UPF"]
+}
