@@ -191,16 +191,23 @@ def writeMDInput(fileName: str, jobProperties: dict):
     num_atoms = 2 * nx * ny * nz  # 2 atoms per unit cell in BCC
 
     # Create atom types
-    if num_elem == 1:
+    if num_elem == 1:  # for monoelemental...
         atom_types = [0] * num_atoms  # All atoms are of the same type
-    else:
-        # Keep generating atom types until we have at least two different types
-        while True:
-            atom_types = np.random.choice(
-                np.arange(num_elem), size=num_atoms
-            )  # Randomly assign types
+    else:  # for multi elements
+        atom_types = []
+        for i in range(
+            10
+        ):  # 10 tries to generate valid concentrations otherwise just send it
             if len(np.unique(atom_types)) > 1:
-                break  # Exit loop if we have more than one unique atom type
+                break
+
+            # Generate random concentrations using a uniform distribution.
+            concentrations = np.random.uniform(0.01, 1, size=num_elem)
+            concentrations /= np.sum(concentrations)  # Normalize to sum to 1
+
+            atom_types = np.random.choice(
+                np.arange(num_elem), size=num_atoms, p=concentrations
+            )
 
     # Create mass block
     mass_block = ""

@@ -13,7 +13,7 @@ def trainMTP(
     runFile = os.path.join(logsFolder, "train.out")
     timeFile = os.path.join(logsFolder, "train.time")
 
-    maxCPUs = os.sched_getaffinity(0) - 1
+    maxCPUs = len(os.sched_getaffinity(0)) - 1
 
     subprocess.Popen(
         "/usr/bin/time -o "
@@ -26,7 +26,7 @@ def trainMTP(
         + potFile
         + " "
         + trainingFIle
-        + " --iteration_limit=10000 --tolerance=0.000001 --init_random=false --al_mode="
+        + " --iteration_limit=1000 --tolerance=0.000001 --init_random=false --al_mode="
         + config["mode"]
         + " > "
         + runFile,
@@ -41,7 +41,7 @@ def trainMTP(
             if line == "Forces:\n":
                 avgForceError = lines[i + 3][31:-1]
 
-    timeSpent = pa.parseTimeFile(timeFile)
+    timeSpent = pa.parseTimeFile(timeFile) * maxCPUs
 
     return avgEnergyError, avgForceError, timeSpent
 
@@ -81,7 +81,7 @@ def selectDiffConfigs(
         stdout=subprocess.PIPE,
     ).wait()
 
-    timeSpent = pa.parseTimeFile(timeFile)
+    timeSpent = pa.parseTimeFile(timeFile) * maxCPUs
 
     with open(diffFile, "r") as f:
         content = f.read()

@@ -72,7 +72,7 @@ def runActiveLearningScheme(
             raise FileNotFoundError(
                 f"Initial potential file not found: {initial_train}"
             )
-        wr.printAndLog(logFile, f"Using initial potential: {initial_train}")
+        wr.printAndLog(logFile, f"Using initial potential/dataset: {initial_train}")
         shutil.copyfile(
             initial_train, trainingFile
         )  # Copy the specified initial training set
@@ -170,7 +170,9 @@ def runActiveLearningScheme(
                 )
                 wr.printAndLog(
                     logFile,
-                    "Training Stage Complete; Wall Time: " + str(trainingTime) + "s",
+                    "Training Stage Complete; CPU Time: "
+                    + str(round(trainingTime, 2))
+                    + "s",
                 )
                 wr.printAndLog(
                     logFile, "Average Energy Per Atom Error: " + avgEnergyError
@@ -231,7 +233,8 @@ def runActiveLearningScheme(
                 config,
             )
             wr.printAndLog(
-                logFile, "Selection Completed; Wall time: " + str(selectTime) + "s"
+                logFile,
+                "Selection Completed; CPU time: " + str(round(selectTime, 2)) + "s",
             )
             wr.printAndLog(
                 logFile,
