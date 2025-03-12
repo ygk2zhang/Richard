@@ -13,7 +13,7 @@ def trainMTP(
     runFile = os.path.join(logsFolder, "train.out")
     timeFile = os.path.join(logsFolder, "train.time")
 
-    maxCPUs = min(len(os.sched_getaffinity(0)) - 1, 23)
+    maxCPUs = os.sched_getaffinity(0) - 1
 
     subprocess.Popen(
         "/usr/bin/time -o "
@@ -56,7 +56,7 @@ def selectDiffConfigs(
     config: str,
 ):
     timeFile = os.path.join(logsFolder, "selectAdd.time")
-    maxCPUs = min(len(os.sched_getaffinity(0)) - 1, 11)
+    maxCPUs = min(len(os.sched_getaffinity(0)) - 1, 12)
 
     subprocess.Popen(
         [

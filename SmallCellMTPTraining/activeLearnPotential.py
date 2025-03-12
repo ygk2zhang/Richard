@@ -256,10 +256,20 @@ def runActiveLearningScheme(
             )
             wr.printAndLog(
                 logFile,
-                "DFT Calculations Complete.\tTotal CPU seconds spent this iteration: "
-                + str(round(np.sum(dftCPUTimesSpent), 2))
+                "DFT Calculations Complete. Used "
+                + str(config["qeCPUsPerConfig"][stage])
+                + " cores per job. \tTotal CPU seconds spent this iteration: "
+                + str(
+                    round(
+                        np.sum(dftCPUTimesSpent) * config["qeCPUsPerConfig"][stage], 2
+                    )
+                )
                 + "s.\tLimiting CPU time: "
-                + str(round(np.max(dftCPUTimesSpent), 2))
+                + str(
+                    round(
+                        np.max(dftCPUTimesSpent) * config["qeCPUsPerConfig"][stage], 2
+                    )
+                )
                 + "s.",
             )
             ### ===== Clean up the DFT outputs by putting them into the archive =====
