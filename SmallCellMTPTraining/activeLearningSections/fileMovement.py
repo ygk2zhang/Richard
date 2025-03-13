@@ -36,13 +36,15 @@ def compileTrainingConfigurations(
 
     for output in qeOutputs:
         # Calculate the number of atoms of each type
-        typeCounts = np.bincount(output["atomTypes"])
+        typeCounts = np.bincount(
+            output["atomTypes"], minlength=len(config["baseEnergyReferences"])
+        )
         # Calculate the total reference energy
         totalReferenceEnergy = 0
         for i, count in enumerate(typeCounts):
             totalReferenceEnergy -= config["baseEnergyReferences"][i] * count
 
-        output["energy"] -= totalReferenceEnergy
+        output["energy"] += totalReferenceEnergy
 
     # Move the outputs to the archive and clear the folder
     shutil.copytree(trainingConfigsFolder, os.path.join(archiveConfigsFolder, tag))
