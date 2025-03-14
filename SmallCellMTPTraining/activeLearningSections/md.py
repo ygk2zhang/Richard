@@ -87,7 +87,7 @@ def performParallelMDRuns(
         outFile = os.path.join(workingFolder, identifier + ".out")
         timeFile = os.path.join(workingFolder, identifier + ".time")
 
-        latticeParameter = config["baseLatticeParameter"]
+        latticeParameter = config["baseLatticeParameter"] * random.uniform(0.95, 1.05)
 
         mdProperties = {
             "latticeParameter": latticeParameter,
