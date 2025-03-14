@@ -22,8 +22,8 @@ def performParallelMDRuns(
     os.mkdir(mdFolder)
 
     os.environ["OMP_NUM_THREADS"] = "1"
+    maxCPUs = config["maxProcs"]
 
-    maxCPUs = len(os.sched_getaffinity(0)) - 1
     cellDimensions = config["mdLatticeConfigs"][i]
     hasPreselected = False
     subprocesses = []

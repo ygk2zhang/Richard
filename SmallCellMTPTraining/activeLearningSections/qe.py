@@ -21,7 +21,7 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, config: dict):
         config["baseStrainStep"],
     )
 
-    maxCPUs = len(os.sched_getaffinity(0)) - 1
+    maxCPUs = config["maxProcs"]
     coresPerQE = 1
     cpusUsed = 0
     os.environ["OMP_NUM_THREADS"] = "1"
@@ -117,7 +117,7 @@ def calculateDiffConfigs(
 ):
     newConfigs = pa.parsePartialMTPConfigsFile(diffFile)
     kPoints = config["kPoints"][stage]
-    maxCPUs = len(os.sched_getaffinity(0)) - 1
+    maxCPUs = config["maxProcs"]
     coresPerQE = config["qeCPUsPerConfig"][stage]
     cpusUsed = 0
     os.environ["OMP_NUM_THREADS"] = "1"
