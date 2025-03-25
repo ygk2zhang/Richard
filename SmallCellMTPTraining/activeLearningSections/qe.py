@@ -63,9 +63,11 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, config: dict):
         qeProperties = {
             "atomPositions": np.array([
                 [0, 0, 0],  # Atom 1 at origin
-                [0.5 * config["baseLatticeParameter"] * strain] * 3  # Atom 2 at body-centered position
-            ]),
-            "atomTypes": [0, 0],  # Both atoms of type 0 (e.g., Silicon)
+                [0.5. 0.5, 0],
+                [0.5, 0, 0.5], 
+                [0, 0.5, 0.5]              
+            ])*config["baseLatticeParameter"] * strain #
+            "atomTypes": [0, 0, 0, 0],  # Both atoms of type 0 (e.g., Silicon)
             "superCell": np.array([
                 [strain * config["baseLatticeParameter"], 0, 0],  # Strained lattice vectors
                 [0, strain * config["baseLatticeParameter"], 0],
