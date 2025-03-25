@@ -1,107 +1,98 @@
 import os
 import numpy as np
-
-# import regex as re  # Removed: regex no longer needed
 import subprocess
 import math
 import time
-
-
 from SmallCellMTPTraining.templates import templates as templates
 from SmallCellMTPTraining.templates import properties as properties
 from SmallCellMTPTraining.io import writers as wr
 from SmallCellMTPTraining.io import parsers as pa
 
-
 def generateInitialDataset(inputFolder: str, outputFolder: str, config: dict):
-    # Extract the base data sets from the configurations
+    """
+    Generates an initial dataset of strained atomic configurations using Quantum ESPRESSO (QE).
+    
+    Args:
+        inputFolder (str): Directory to store QE input files and working directories.
+        outputFolder (str): Directory to store QE output files.
+        config (dict): Configuration dictionary containing parameters like strains, lattice constants, etc.
+    
+    Returns:
+        list: Exit codes of all QE subprocesses.
+    """
+    # Generate a range of base strains (e.g., 0.9, 0.91, ..., 1.1 for 10% compression/expansion)
     baseStrains = np.arange(
-        config["baseStrains"][0],
-        config["baseStrains"][1],
-        config["baseStrainStep"],
+        config["baseStrains"][0],  # Starting strain (e.g., 0.9 for 10% compression)
+        config["baseStrains"][1],  # Ending strain (e.g., 1.1 for 10% expansion)
+        config["baseStrainStep"],  # Step size (e.g., 0.01 for 1% increments)
     )
 
-    maxCPUs = config["maxProcs"]
-    coresPerQE = 1
-    cpusUsed = 0
-    os.environ["OMP_NUM_THREADS"] = "1"
-    subprocesses = []
-    exitCodes = []
-    completed = set()
+    # Parallel execution control
+    maxCPUs = config["maxProcs"]  # Maximum allowed concurrent processes
+    coresPerQE = 1                # CPUs per QE job (fixed to 1 here)
+    cpusUsed = 0                  # Track active CPUs
+    os.environ["OMP_NUM_THREADS"] = "1"  # Disable OpenMP parallelism (avoid oversubscription)
+    subprocesses = []             # Store subprocess objects
+    exitCodes = []                # Store exit codes
+    completed = set()             # Track completed jobs
 
-    # Generate and submit the hydrostatic strain runs
+    # Loop over each strain value
     for strain in baseStrains:
-
-        # This is essentially a primitive scheduler/semaphore
+        # Primitive job scheduler: Wait if CPU limit is reached
         if cpusUsed + coresPerQE > maxCPUs:
             available = False
             while not available:
-                time.sleep(1)
+                time.sleep(1)  # Check every second
                 for i, p in enumerate(subprocesses):
                     if i in completed:
                         continue
-                    exitCode = p.poll()
-                    if not exitCode == None:
+                    exitCode = p.poll()  # Check if process finished
+                    if exitCode is not None:
                         available = True
                         cpusUsed -= coresPerQE
                         completed.add(i)
 
+        # Set up working directory and file paths
         workingFolder = os.path.join(inputFolder, "baseStrain" + str(round(strain, 3)))
-        inputFile = os.path.join(
-            workingFolder, "baseStrain" + str(round(strain, 3)) + ".in"
-        )
-        outputFile = os.path.join(
-            outputFolder, "baseStrain" + str(round(strain, 3)) + ".out"
-        )
+        inputFile = os.path.join(workingFolder, "baseStrain" + str(round(strain, 3)) + ".in")
+        outputFile = os.path.join(outputFolder, "baseStrain" + str(round(strain, 3)) + ".out")
 
-        os.mkdir(workingFolder)
+        os.mkdir(workingFolder)  # Create a directory for this strain
 
-        # Prepare QE input properties
+        # Prepare QE input properties (atomic positions, lattice, etc.)
         qeProperties = {
-            "atomPositions": np.array(
-                [
-                    [0, 0, 0],
-                    [
-                        0.5 * config["baseLatticeParameter"] * strain,
-                        0.5 * config["baseLatticeParameter"] * strain,
-                        0.5 * config["baseLatticeParameter"] * strain,
-                    ],
-                ]
-            ),
-            "atomTypes": [0, 0],
-            "superCell": np.array(
-                [
-                    [strain * config["baseLatticeParameter"], 0, 0],
-                    [0, strain * config["baseLatticeParameter"], 0],
-                    [0, 0, strain * config["baseLatticeParameter"]],
-                ]
-            ),
-            "kPoints": [10, 10, 10],
-            "ecutwfc": 90,
-            "ecutrho": 450,
+            "atomPositions": np.array([
+                [0, 0, 0],  # Atom 1 at origin
+                [0.5 * config["baseLatticeParameter"] * strain] * 3  # Atom 2 at body-centered position
+            ]),
+            "atomTypes": [0, 0],  # Both atoms of type 0 (e.g., Silicon)
+            "superCell": np.array([
+                [strain * config["baseLatticeParameter"], 0, 0],  # Strained lattice vectors
+                [0, strain * config["baseLatticeParameter"], 0],
+                [0, 0, strain * config["baseLatticeParameter"]]
+            ]),
+            "kPoints": [10, 10, 10],  # k-point grid for Brillouin zone sampling
+            "ecutwfc": 90,   # Wavefunction cutoff (Ry)
+            "ecutrho": 450,  # Charge density cutoff (Ry)
             "qeOutDir": workingFolder,
-            "elements": config["elements"],
+            "elements": config["elements"],  # Chemical elements (e.g., ["Si"])
             "atomicWeights": config["atomicWeights"],
             "pseudopotentials": config["pseudopotentials"],
             "pseudopotentialDirectory": config["pseudopotentialDirectory"],
         }
 
-        # Write the input and run
+        # Write QE input file and launch job
         wr.writeQEInput(inputFile, qeProperties)
         cpusUsed += coresPerQE
         subprocesses.append(
             subprocess.Popen(
-                "mpirun -np "
-                + str(coresPerQE)
-                + " --bind-to none pw.x -in "
-                + inputFile
-                + " > "
-                + outputFile,
+                f"mpirun -np {coresPerQE} --bind-to none pw.x -in {inputFile} > {outputFile}",
                 shell=True,
                 cwd=workingFolder,
-            ),
+            )
         )
 
+    # Wait for all jobs to finish and collect exit codes
     exitCodes = [p.wait() for p in subprocesses]
     return exitCodes
 
@@ -115,20 +106,36 @@ def calculateDiffConfigs(
     iteration: int,
     config: dict,
 ):
+    """
+    Runs QE simulations on perturbed atomic configurations (e.g., for MTP training).
+    
+    Args:
+        inputFolder (str): Directory for QE input files.
+        outputFolder (str): Directory for QE output files.
+        diffFile (str): File containing perturbed atomic configurations.
+        attempt (str): Identifier for the training attempt.
+        stage (int): Current stage of the active learning loop.
+        iteration (int): Current iteration within the stage.
+        config (dict): Configuration parameters.
+    
+    Returns:
+        tuple: (exit codes, CPU times spent for each job)
+    """
+    # Parse configurations from file
     newConfigs = pa.parsePartialMTPConfigsFile(diffFile)
-    kPoints = config["kPoints"][stage]
+    kPoints = config["kPoints"][stage]  # k-point grid may vary by stage
     maxCPUs = config["maxProcs"]
-    coresPerQE = config["qeCPUsPerConfig"][stage]
+    coresPerQE = config["qeCPUsPerConfig"][stage]  # CPUs per job (can vary by stage)
     cpusUsed = 0
     os.environ["OMP_NUM_THREADS"] = "1"
 
     subprocesses = []
     exitCodes = []
     completed = set()
+    cpuTimesSpent = []  # Track computational cost
 
     for j, newConfig in enumerate(newConfigs):
-
-        # This is essentially a primitive scheduler/semaphore
+        # Job scheduler (same as in generateInitialDataset)
         if cpusUsed + coresPerQE > maxCPUs:
             available = False
             while not available:
@@ -137,19 +144,19 @@ def calculateDiffConfigs(
                     if i in completed:
                         continue
                     exitCode = p.poll()
-                    if not exitCode == None:
+                    if exitCode is not None:
                         available = True
                         cpusUsed -= coresPerQE
                         completed.add(i)
 
-        identifier = (
-            str(attempt) + "_" + str(stage) + "_" + str(iteration) + "_" + str(j)
-        )
+        # Unique identifier for this job
+        identifier = f"{attempt}_{stage}_{iteration}_{j}"
         workingFolder = os.path.join(inputFolder, identifier)
         os.mkdir(workingFolder)
         qeFile = os.path.join(workingFolder, identifier + ".in")
         outFile = os.path.join(outputFolder, identifier + ".out")
 
+        # Prepare QE input properties
         qeProperties = {
             "atomPositions": newConfig["atomPositions"],
             "atomTypes": newConfig["atomTypes"],
@@ -164,28 +171,22 @@ def calculateDiffConfigs(
             "pseudopotentialDirectory": config["pseudopotentialDirectory"],
         }
 
+        # Launch QE job
         wr.writeQEInput(qeFile, qeProperties)
         cpusUsed += coresPerQE
         subprocesses.append(
             subprocess.Popen(
-                "mpirun -np "
-                + str(coresPerQE)
-                + " --bind-to none pw.x -in "
-                + qeFile
-                + " > "
-                + outFile,
+                f"mpirun -np {coresPerQE} --bind-to none pw.x -in {qeFile} > {outFile}",
                 shell=True,
                 cwd=workingFolder,
-            ),
+            )
         )
 
     exitCodes = [p.wait() for p in subprocesses]
 
-    cpuTimesSpent = []
+    # Parse CPU times from QE output files
     for j, newConfig in enumerate(newConfigs):
-        identifier = (
-            str(attempt) + "_" + str(stage) + "_" + str(iteration) + "_" + str(j)
-        )
+        identifier = f"{attempt}_{stage}_{iteration}_{j}"
         outFile = os.path.join(outputFolder, identifier + ".out")
         qeOutput = pa.parseQEOutput(outFile)
         cpuTimesSpent.append(qeOutput["cpuTimeSpent"])
@@ -194,17 +195,22 @@ def calculateDiffConfigs(
 
 
 if __name__ == "__main__":
+    """Entry point: Loads config.json and runs generateInitialDataset."""
     import json
     import shutil
 
+    # Load configuration
     with open("./config.json", "r") as f:
-        out = json.load(f)
-        # print(out)
-        if os.path.exists("./test"):
-            shutil.rmtree("./test")
-        os.mkdir("./test")
-        generateInitialDataset(
-            "/global/home/hpc5146/Projects/SmallCellMTPTraining/SmallCellMTPTraining/activeLearning/test",
-            "/global/home/hpc5146/Projects/SmallCellMTPTraining/SmallCellMTPTraining/activeLearning/testout",
-            out,
-        )
+        config = json.load(f)
+
+    # Set up workspace
+    if os.path.exists("./test"):
+        shutil.rmtree("./test")
+    os.mkdir("./test")
+
+    # Run initial dataset generation
+    generateInitialDataset(
+        "/path/to/input_folder",
+        "/path/to/output_folder",
+        config,
+    )
