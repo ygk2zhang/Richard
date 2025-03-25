@@ -297,7 +297,7 @@ def writeMDInput(fileName: str, jobProperties: dict):
     for i in range(nx):
         for j in range(ny):
             for k in range(nz):
-                for base_atom in [(0, 0, 0), (0.5, 0.5, 0.5)]:  # BCC basis
+                for base_atom in [(0, 0, 0), (0.5, 0.5, 0), (0.5, 0, 0.5), (0, 0.5, 0.5)]:  # FCC basis YZ
                     if n_created < num_atoms:
                         x = (i + base_atom[0]) / nx * jobProperties["boxDimensions"][0]
                         y = (j + base_atom[1]) / ny * jobProperties["boxDimensions"][1]
