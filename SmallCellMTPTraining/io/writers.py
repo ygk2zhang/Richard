@@ -1,4 +1,3 @@
-# writers.py
 from datetime import datetime
 import numpy as np
 import os
@@ -8,6 +7,16 @@ from SmallCellMTPTraining.templates import properties as props
 
 
 def checkProperties(propertiesToCheck: list, properties: dict):
+    """
+    Validates that required properties exist in a dictionary.
+    
+    Args:
+        propertiesToCheck (list): List of required property keys
+        properties (dict): Dictionary to validate
+        
+    Returns:
+        str: Comma-separated string of missing properties, or None if all present
+    """
     missing = []
     for ele in propertiesToCheck:
         if ele not in properties:
@@ -18,21 +27,30 @@ def checkProperties(propertiesToCheck: list, properties: dict):
 
 
 def writeQEInput(fileName: str, taskProperties: dict) -> str:
-    """Creates a QE input, needing
-    properties = [
-        "atomPositions",
-        "atomTypes",
-        "superCell",
-        "kPoints",
-        "ecutwfc",
-        "ecutrho",
-        "qeOutDir",
-        "elements",
-        "atomicWeights",
-        "pseudopotentials",
-        "pseudopotentialDirectory",
-    ]
     """
+    Generates a Quantum ESPRESSO (QE) input file.
+    
+    Required properties:
+        - atomPositions: List of atomic coordinates
+        - atomTypes: List of atom type indices
+        - superCell: 3x3 matrix of supercell vectors
+        - kPoints: k-point grid dimensions [k1, k2, k3]
+        - ecutwfc: Wavefunction cutoff energy
+        - ecutrho: Charge density cutoff energy  
+        - qeOutDir: Output directory
+        - elements: List of element symbols
+        - atomicWeights: List of atomic masses
+        - pseudopotentials: List of pseudopotential filenames
+        - pseudopotentialDirectory: Path to pseudopotentials
+    
+    Args:
+        fileName (str): Output file path
+        taskProperties (dict): Dictionary containing all required properties
+        
+    Returns:
+        str: The generated QE input file content
+    """
+    # Validate required properties
     properties = props.qeProperties
     if checkProperties(properties, taskProperties):
         raise Exception(
@@ -41,6 +59,8 @@ def writeQEInput(fileName: str, taskProperties: dict) -> str:
 
     numAtoms = len(taskProperties["atomPositions"])
     num_elem = len(taskProperties["elements"])
+    
+    # Format supercell vectors as strings
     superCellStrings = [str(x)[1:-1] for x in taskProperties["superCell"]]
 
     # Generate ATOMIC_SPECIES block
@@ -64,8 +84,9 @@ def writeQEInput(fileName: str, taskProperties: dict) -> str:
                 taskProperties["atomPositions"][a][2],
             )
         )
-    atomPositions = "".join(atomPositionsString)  # Corrected: join directly
+    atomPositions = "".join(atomPositionsString)
 
+    # Format the complete QE input using template
     newQEInput = templates.qeInputTemplate.format(
         nat=numAtoms,
         ntyp=num_elem,
@@ -81,6 +102,7 @@ def writeQEInput(fileName: str, taskProperties: dict) -> str:
         pseudopotentialDirectory=taskProperties["pseudopotentialDirectory"],
     )
 
+    # Write to file
     with open(fileName, "w") as f:
         f.write(newQEInput)
 
@@ -88,7 +110,20 @@ def writeQEInput(fileName: str, taskProperties: dict) -> str:
 
 
 def writeQEJob(fileName: str, jobProperties: dict):
-    """Creates a QE Job."""
+    """
+    Generates a job submission script for QE calculations.
+    
+    Args:
+        fileName (str): Output file path
+        jobProperties (dict): Dictionary containing job parameters:
+            - ncpus: Number of CPUs
+            - jobName: Job name
+            - maxDuration: Max runtime
+            - runFile: Script to run
+            - inFile: QE input file
+            - outFile: Output file
+            - memPerCpu: Memory per CPU
+    """
     properties = props.calcJobProperties
     if checkProperties(properties, jobProperties):
         raise Exception(
@@ -111,6 +146,20 @@ def writeQEJob(fileName: str, jobProperties: dict):
 
 
 def writeMTPConfigs(filename: str, mtpPropertiesList: list):
+    """
+    Writes configurations in MTP training format.
+    
+    Format includes:
+        - Supercell information
+        - Atom positions and types  
+        - Forces
+        - Energy
+        - Virial stresses
+        
+    Args:
+        filename (str): Output file path
+        mtpPropertiesList (list): List of configuration dictionaries
+    """
     with open(filename, "w+") as f:
         for mtpProperties in mtpPropertiesList:
             f.write("BEGIN_CFG\n")
@@ -150,7 +199,21 @@ def writeMTPConfigs(filename: str, mtpPropertiesList: list):
 
 
 def writeMDJob(fileName: str, jobProperties: dict):
-    """Creates a MD Job."""
+    """
+    Generates a job submission script for MD simulations.
+    
+    Args:
+        fileName (str): Output file path  
+        jobProperties (dict): Dictionary containing:
+            - ncpus: Number of CPUs
+            - jobName: Job name
+            - timeFile: File to store timing info
+            - maxDuration: Max runtime
+            - runFile: Script to run
+            - inFile: MD input file
+            - outFile: Output file
+            - memPerCpu: Memory per CPU
+    """
     properties = props.calcJobProperties
     if checkProperties(properties, jobProperties):
         raise Exception(
@@ -174,79 +237,73 @@ def writeMDJob(fileName: str, jobProperties: dict):
 
 
 def writeMDInput(fileName: str, jobProperties: dict):
-    """Creates a MD Input, needing:
-    mdProperties = ["latticeParameter", "boxDimensions", "potFile", "temperature", "pressure","elements", "atomicWeights"]
+    """
+    Generates an MD simulation input file (LAMMPS format).
+    
+    Required properties:
+        - latticeParameter: Base lattice constant
+        - boxDimensions: Simulation box dimensions
+        - potFile: Path to potential file
+        - temperature: Simulation temperature
+        - pressure: Simulation pressure
+        - elements: List of element symbols
+        - atomicWeights: List of atomic masses
+        
+    Args:
+        fileName (str): Output file path
+        jobProperties (dict): Dictionary containing all required properties
     """
     properties = props.mdProperties
     if checkProperties(properties, jobProperties):
         raise Exception(
             "Properties missing: " + checkProperties(properties, jobProperties)
         )
+        
     num_elem = len(jobProperties["elements"])
-    # Calculate the number of unit cells in each dimension
+    
+    # Calculate number of unit cells in each dimension
     nx = int(np.ceil(jobProperties["boxDimensions"][0]))
     ny = int(np.ceil(jobProperties["boxDimensions"][1]))
     nz = int(np.ceil(jobProperties["boxDimensions"][2]))
-    # Total number of atoms
-    num_atoms = 2 * nx * ny * nz  # 2 atoms per unit cell in BCC
+    
+    # Total atoms (2 per unit cell for BCC)
+    num_atoms = 2 * nx * ny * nz  
 
-    # Create atom types
-    if num_elem == 1:  # for monoelemental...
-        atom_types = [0] * num_atoms  # All atoms are of the same type
-    else:  # for multi elements
+    # Create atom types (random distribution for alloys)
+    if num_elem == 1:  # Single element
+        atom_types = [0] * num_atoms  
+    else:  # Multi-element alloy
         atom_types = []
-        for i in range(
-            10
-        ):  # 10 tries to generate valid concentrations otherwise just send it
+        for i in range(10):  # Try up to 10 times to get valid distribution
             if len(np.unique(atom_types)) > 1:
                 break
 
-            # Generate random concentrations using a uniform distribution.
+            # Generate random concentrations
             concentrations = np.random.uniform(0.01, 1, size=num_elem)
-            concentrations /= np.sum(concentrations)  # Normalize to sum to 1
+            concentrations /= np.sum(concentrations)  # Normalize
 
             atom_types = np.random.choice(
                 np.arange(num_elem), size=num_atoms, p=concentrations
             )
 
-    # Create mass block
+    # Create mass definitions
     mass_block = ""
     for i in range(num_elem):
         mass_block += "mass  {} {}\n".format(i + 1, jobProperties["atomicWeights"][i])
 
-    # Create atoms block
+    # Create atom positions (BCC lattice)
     create_atoms_block = ""
     n_created = 0
     for i in range(nx):
         for j in range(ny):
             for k in range(nz):
-                for base_atom in [
-                    (0, 0, 0),
-                    (0.5, 0.5, 0.5),
-                ]:  # BCC basis atoms
-                    if (
-                        n_created < num_atoms
-                    ):  # This check is important! Before, we created too many atoms
-                        x = (
-                            (i + base_atom[0])
-                            / nx
-                            * jobProperties["boxDimensions"][0]
-                            # * jobProperties["latticeParameter"]
-                        )
-                        y = (
-                            (j + base_atom[1])
-                            / ny
-                            * jobProperties["boxDimensions"][1]
-                            # * jobProperties["latticeParameter"]
-                        )
-                        z = (
-                            (k + base_atom[2])
-                            / nz
-                            * jobProperties["boxDimensions"][2]
-                            # * jobProperties["latticeParameter"]
-                        )
+                for base_atom in [(0, 0, 0), (0.5, 0.5, 0.5)]:  # BCC basis
+                    if n_created < num_atoms:
+                        x = (i + base_atom[0]) / nx * jobProperties["boxDimensions"][0]
+                        y = (j + base_atom[1]) / ny * jobProperties["boxDimensions"][1]
+                        z = (k + base_atom[2]) / nz * jobProperties["boxDimensions"][2]
 
-                        atom_type = atom_types[n_created] + 1  # +1 for LAMMPS numbering
+                        atom_type = atom_types[n_created] + 1  # LAMMPS uses 1-based
 
                         create_atoms_block += (
                             "create_atoms {} single {} {} {}\n".format(
@@ -255,6 +312,7 @@ def writeMDInput(fileName: str, jobProperties: dict):
                         )
                         n_created += 1
 
+    # Format complete MD input
     newMDInput = templates.mdInputTemplate.format(
         base=jobProperties["latticeParameter"],
         ttt=jobProperties["temperature"],
@@ -275,13 +333,29 @@ def writeMDInput(fileName: str, jobProperties: dict):
 
 
 def writeTrainJob(fileName: str, jobProperties: dict):
-    """Creates a train Job."""
-
+    """
+    Generates a job script for MTP training.
+    
+    Args:
+        fileName (str): Output file path
+        jobProperties (dict): Dictionary containing:
+            - ncpus: Number of CPUs
+            - jobName: Job name  
+            - timeFile: Timing output file
+            - maxDuration: Max runtime
+            - runFile: Script to run
+            - memPerCpu: Memory per CPU
+            - potFile: Potential file
+            - trainFile: Training set file
+            - initRandom: Random initialization flag
+            - mode: Training mode
+    """
     properties = props.trainJobProperties
     if checkProperties(properties, jobProperties):
         raise Exception(
             "Properties missing: " + checkProperties(properties, jobProperties)
         )
+        
     newTrainJob = templates.trainJobTemplate.format(
         cpus=jobProperties["ncpus"],
         jobName=jobProperties["jobName"],
@@ -302,7 +376,23 @@ def writeTrainJob(fileName: str, jobProperties: dict):
 
 
 def writeSelectJob(fileName: str, jobProperties: dict):
-    """Creates a select Job."""
+    """
+    Generates a job script for configuration selection.
+    
+    Args:
+        fileName (str): Output file path
+        jobProperties (dict): Dictionary containing:
+            - ncpus: Number of CPUs
+            - jobName: Job name
+            - timeFile: Timing output file  
+            - maxDuration: Max runtime
+            - runFile: Script to run
+            - memPerCpu: Memory per CPU
+            - potFile: Potential file
+            - trainFile: Training set file
+            - preselectedFile: Preselected configs file
+            - diffFile: Output diff configs file
+    """
     properties = props.selectJobProperties
     if checkProperties(properties, jobProperties):
         raise Exception(
@@ -327,6 +417,13 @@ def writeSelectJob(fileName: str, jobProperties: dict):
 
 
 def printAndLog(fileName: str, message: str):
+    """
+    Prints a timestamped message and logs it to a file.
+    
+    Args:
+        fileName (str): Log file path
+        message (str): Message to log
+    """
     now = datetime.now()
     dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
     datedMessage = dt_string + "   " + message
