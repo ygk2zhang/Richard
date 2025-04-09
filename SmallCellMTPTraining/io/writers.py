@@ -267,7 +267,7 @@ def writeMDInput(fileName: str, jobProperties: dict):
     nz = int(np.ceil(jobProperties["boxDimensions"][2]))
     
     # Total atoms (2 per unit cell for BCC)
-    num_atoms = 2 * nx * ny * nz  
+    num_atoms = 4 * nx * ny * nz  
 
     # Create atom types (random distribution for alloys)
     if num_elem == 1:  # Single element

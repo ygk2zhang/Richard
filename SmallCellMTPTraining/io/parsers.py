@@ -52,7 +52,7 @@ def parseQEOutput(fileName: str, convertToAngRy=True) -> dict:
 
         # Extract total energy
         energy = (
-            float(re.findall(r"(?:.*!\s*total energy\s*=\s*|^)(\S+)", content)[0])
+            float(re.findall(r"(?:.*!\s*total energy\s*=\s*)(\S+)", content)[0])
             * energyConversion
         )
 

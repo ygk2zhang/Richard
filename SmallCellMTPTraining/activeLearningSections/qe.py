@@ -63,10 +63,10 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, config: dict):
         qeProperties = {
             "atomPositions": np.array([
                 [0, 0, 0],  # Atom 1 at origin
-                [0.5. 0.5, 0],
+                [0.5, 0.5, 0],
                 [0.5, 0, 0.5], 
                 [0, 0.5, 0.5]              
-            ])*config["baseLatticeParameter"] * strain #
+            ])*config["baseLatticeParameter"] * strain, #
             "atomTypes": [0, 0, 0, 0],  # Both atoms of type 0 (e.g., Silicon)
             "superCell": np.array([
                 [strain * config["baseLatticeParameter"], 0, 0],  # Strained lattice vectors
@@ -75,7 +75,7 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, config: dict):
             ]),
             "kPoints": [10, 10, 10],  # k-point grid for Brillouin zone sampling
             "ecutwfc": 90,   # Wavefunction cutoff (Ry)
-            "ecutrho": 450,  # Charge density cutoff (Ry)
+            "ecutrho": 780,  # Charge density cutoff (Ry)
             "qeOutDir": workingFolder,
             "elements": config["elements"],  # Chemical elements (e.g., ["Si"])
             "atomicWeights": config["atomicWeights"],
