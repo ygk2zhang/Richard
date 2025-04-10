@@ -101,9 +101,9 @@ thermo 1000
 
 {create_atoms_block}
 velocity all create  0.01 45454 rot yes dist gaussian 
-fix  0 all recenter INIT INIT INIT 
 fix     1 all npt temp {ttt} {ttt} 0.1 iso {ppp} {ppp} 1
-dump 1 all xyz 1000 Meng_R.xyz
+fix  2 all recenter INIT INIT INIT
+dump            1 all custom 500 dump.truck id type x y z
 run             100000
 """
 
