@@ -97,6 +97,8 @@ def writeQEInput(fileName: str, taskProperties: dict) -> str:
         out=taskProperties["qeOutDir"],
         ecut=taskProperties["ecutwfc"],
         erho=taskProperties["ecutrho"],
+        smearing=taskProperties["smearing"],
+        degauss=taskProperties["degauss"],
         atomic_species=atomic_species_str,
         aaa=atomPositions,
         pseudopotentialDirectory=taskProperties["pseudopotentialDirectory"],
@@ -332,89 +334,186 @@ def writeMDInput(fileName: str, jobProperties: dict):
     return newMDInput
 
 
-def writeTrainJob(fileName: str, jobProperties: dict):
+def write_Cu100(fileName: str, jobProperties: dict):
+    from ase.build import fcc100
+    from ase.io import write
+    import numpy as np
     """
-    Generates a job script for MTP training.
+    Generates an MD simulation input file (LAMMPS format) with 10 Å vacuum along z-axis.
     
+    Required properties:
+        - latticeParameter: Base lattice constant
+        - boxDimensions: Simulation box dimensions
+        - potFile: Path to potential file
+        - temperature: Simulation temperature
+        - pressure: Simulation pressure
+        - elements: List of element symbols
+        - atomicWeights: List of atomic masses
+        
     Args:
         fileName (str): Output file path
-        jobProperties (dict): Dictionary containing:
-            - ncpus: Number of CPUs
-            - jobName: Job name  
-            - timeFile: Timing output file
-            - maxDuration: Max runtime
-            - runFile: Script to run
-            - memPerCpu: Memory per CPU
-            - potFile: Potential file
-            - trainFile: Training set file
-            - initRandom: Random initialization flag
-            - mode: Training mode
+        jobProperties (dict): Dictionary containing all required properties
     """
-    properties = props.trainJobProperties
+    properties = props.mdProperties
     if checkProperties(properties, jobProperties):
         raise Exception(
             "Properties missing: " + checkProperties(properties, jobProperties)
         )
         
-    newTrainJob = templates.trainJobTemplate.format(
-        cpus=jobProperties["ncpus"],
-        jobName=jobProperties["jobName"],
-        timeFile=jobProperties["timeFile"],
-        time=jobProperties["maxDuration"],
-        runFile=jobProperties["runFile"],
-        mem=jobProperties["memPerCpu"],
+    num_elem = len(jobProperties["elements"])
+    
+    # Calculate number of unit cells in each dimension
+    nx = int(np.ceil(jobProperties["boxDimensions"][0]))
+    ny = int(np.ceil(jobProperties["boxDimensions"][1]))
+    nz = int(np.ceil(jobProperties["boxDimensions"][2]))
+    
+    # Total atoms (4 per unit cell for FCC) 4 in the size corresponds to four layer meetings
+    atoms = fcc100('Cu', a=jobProperties["latticeParameter"], size=(nx, ny, 4), vacuum=12)
+    positions = atoms.get_positions()
+    num_atoms = len(positions)
+    # Create atom types (random distribution for alloys)
+    if num_elem == 1:  # Single element
+        atom_types = [0] * num_atoms  
+    else:  # Multi-element alloy
+        atom_types = []
+        for i in range(10):  # Try up to 10 times to get valid distribution
+            if len(np.unique(atom_types)) > 1:
+                break
+
+            # Generate random concentrations
+            concentrations = np.random.uniform(0.01, 1, size=num_elem)
+            concentrations /= np.sum(concentrations)  # Normalize
+
+            atom_types = np.random.choice(
+                np.arange(num_elem), size=num_atoms, p=concentrations
+            )
+
+    # Create mass definitions
+    mass_block = ""
+    for i in range(num_elem):
+        mass_block += "mass  {} {}\n".format(i + 1, jobProperties["atomicWeights"][i])
+
+    # Create atom positions (surface)
+    
+    create_atoms_block = ""
+    for i, pos in enumerate(positions):
+        atom_type = atom_types[i] + 1  # LAMMPS uses 1-based
+        create_atoms_block += "create_atoms {} single {} {} {}\n".format(atom_type, pos[0], pos[1], pos[2])
+    
+    # get box dimensions from ASE structure 
+    cell = atoms.get_cell()
+     
+    xdim = cell[0,0]
+    ydim = cell[1,1]
+    zdim = cell[2,2]
+    xydim= cell [1,0]
+    # Format complete MD input
+    newMDInput = templates.mdInputTemplate.format(
+        base=jobProperties["latticeParameter"],
+        ttt=jobProperties["temperature"],
+        ppp=jobProperties["pressure"],
         pot=jobProperties["potFile"],
-        train=jobProperties["trainFile"],
-        init=jobProperties["initRandom"],
-        mode=jobProperties["mode"],
+        xdim=xdim,
+        ydim=ydim,
+        zdim=zdim, # Use modified z-dimension with vacuum
+        xydim=xydim, 
+        num_elem=num_elem,
+        mass_block=mass_block,
+        create_atoms_block=create_atoms_block,
     )
 
     with open(fileName, "w") as f:
-        f.write(newTrainJob)
-
-    return newTrainJob
-
-
-def writeSelectJob(fileName: str, jobProperties: dict):
+        f.write(newMDInput)
+def write_Cu111(fileName: str, jobProperties: dict):
+    from ase.build import fcc111
+    from ase.io import write
+    import numpy as np
     """
-    Generates a job script for configuration selection.
+    Generates an MD simulation input file (LAMMPS format) with 10 Å vacuum along z-axis.
     
+    Required properties:
+        - latticeParameter: Base lattice constant
+        - boxDimensions: Simulation box dimensions
+        - potFile: Path to potential file
+        - temperature: Simulation temperature
+        - pressure: Simulation pressure
+        - elements: List of element symbols
+        - atomicWeights: List of atomic masses
+        
     Args:
         fileName (str): Output file path
-        jobProperties (dict): Dictionary containing:
-            - ncpus: Number of CPUs
-            - jobName: Job name
-            - timeFile: Timing output file  
-            - maxDuration: Max runtime
-            - runFile: Script to run
-            - memPerCpu: Memory per CPU
-            - potFile: Potential file
-            - trainFile: Training set file
-            - preselectedFile: Preselected configs file
-            - diffFile: Output diff configs file
+        jobProperties (dict): Dictionary containing all required properties
     """
-    properties = props.selectJobProperties
+    properties = props.mdProperties
     if checkProperties(properties, jobProperties):
         raise Exception(
             "Properties missing: " + checkProperties(properties, jobProperties)
         )
+        
+    num_elem = len(jobProperties["elements"])
+    
+    # Calculate number of unit cells in each dimension and desired Cu layer: in this case it is 4
+    nx = int(np.ceil(jobProperties["boxDimensions"][0]))
+    ny = int(np.ceil(jobProperties["boxDimensions"][1]))
+    nz = int(np.ceil(jobProperties["boxDimensions"][2]))
+    layer=4 
+    # Total atoms (4 per unit cell for FCC) 4 in the size corresponds to four layer meetings
+    atoms = fcc111('Cu', a=jobProperties["latticeParameter"], size=(nx, ny, layer), vacuum=12)
+    atoms.center()
+    positions = atoms.get_positions()
+    num_atoms = len(positions)
+    # Create atom types (random distribution for alloys)
+    if num_elem == 1:  # Single element
+        atom_types = [0] * num_atoms  
+    else:  # Multi-element alloy
+        atom_types = []
+        for i in range(10):  # Try up to 10 times to get valid distribution
+            if len(np.unique(atom_types)) > 1:
+                break
 
-    newSelectJob = templates.selectJobTemplate.format(
-        cpus=jobProperties["ncpus"],
-        jobName=jobProperties["jobName"],
-        timeFile=jobProperties["timeFile"],
-        time=jobProperties["maxDuration"],
-        runFile=jobProperties["runFile"],
-        mem=jobProperties["memPerCpu"],
+            # Generate random concentrations
+            concentrations = np.random.uniform(0.01, 1, size=num_elem)
+            concentrations /= np.sum(concentrations)  # Normalize
+
+            atom_types = np.random.choice(
+                np.arange(num_elem), size=num_atoms, p=concentrations
+            )
+
+    # Create mass definitions
+    mass_block = ""
+    for i in range(num_elem):
+        mass_block += "mass  {} {}\n".format(i + 1, jobProperties["atomicWeights"][i])
+
+    # Create atom positions (surface)
+    
+    create_atoms_block = ""
+    for i, pos in enumerate(positions):
+        atom_type = atom_types[i] + 1  # LAMMPS uses 1-based
+        create_atoms_block += "create_atoms {} single {} {} {}\n".format(atom_type, pos[0], pos[1], pos[2])
+    
+    # get box dimensions from ASE structure 
+    cell = atoms.get_cell()
+     
+    xdim = cell[0,0]
+    ydim = cell[1,1]
+    zdim = cell[2,2]
+    xydim= cell [1,0]
+    # Format complete MD input
+    newMDInput = templates.mdInputTemplate.format(
+        base=jobProperties["latticeParameter"],
+        ttt=jobProperties["temperature"],
+        ppp=jobProperties["pressure"],
         pot=jobProperties["potFile"],
-        train=jobProperties["trainFile"],
-        preselected=jobProperties["preselectedFile"],
-        diff=jobProperties["diffFile"],
+        xdim=xdim,
+        ydim=ydim,
+        zdim=zdim, 
+        xydim=xydim, 
+        num_elem=num_elem,
+        mass_block=mass_block,
+        create_atoms_block=create_atoms_block,
     )
     with open(fileName, "w") as f:
-        f.write(newSelectJob)
-    return newSelectJob
-
+        f.write(newMDInput)
 
 def printAndLog(fileName: str, message: str):
     """

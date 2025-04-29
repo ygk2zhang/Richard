@@ -15,10 +15,12 @@ ibrav=0,
 nat={nat},
 ntyp={ntyp},
 ecutwfc={ecut},
-ecutrho={erho}
+ecutrho={erho},
+nspin=2,
+starting_magnetization(1)=0.3,
 occupations='smearing',
-smearing = 'gaussian',
-degauss = 0.01,
+smearing = '{smearing}',
+degauss = {degauss},
 /
 &electrons
 mixing_mode='plain',
@@ -85,9 +87,12 @@ dimension        3
 boundary         p p p
 
 atom_style       atomic
-lattice          bcc {base}
-region           whole block 0 {xdim} 0 {ydim} 0 {zdim} units lattice
+lattice          none 1.0 
+box tilt large
+region           whole prism  0 {xdim} 0 {ydim} 0 {zdim} {xydim} 0.0 0.0  units box
 create_box       {num_elem}  whole
+
+
 {mass_block}
 pair_style mlip      load_from={pot} extrapolation_control=true threshold_save=2.1 threshold_break=10  extrapolation_control:save_extrapolative_to=preselected.cfg
 pair_coeff * *

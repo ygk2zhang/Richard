@@ -123,7 +123,7 @@ def performParallelMDRuns(
         }
 
         # Write MD input file and launch simulation
-        wr.writeMDInput(mdFile, mdProperties)
+        wr.write_Cu111(mdFile, mdProperties)
         subprocesses.append(
             subprocess.Popen(
                 [

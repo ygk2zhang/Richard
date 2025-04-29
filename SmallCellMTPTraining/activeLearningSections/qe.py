@@ -76,6 +76,8 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, config: dict):
             "kPoints": [10, 10, 10],  # k-point grid for Brillouin zone sampling
             "ecutwfc": 90,   # Wavefunction cutoff (Ry)
             "ecutrho": 780,  # Charge density cutoff (Ry)
+            "smearing": config["smearing"],
+            "degauss": config["degauss"],
             "qeOutDir": workingFolder,
             "elements": config["elements"],  # Chemical elements (e.g., ["Si"])
             "atomicWeights": config["atomicWeights"],
@@ -165,6 +167,8 @@ def calculateDiffConfigs(
             "superCell": newConfig["superCell"],
             "ecutrho": config["ecutrho"],
             "ecutwfc": config["ecutwfc"],
+            "smearing": config["smearing"],
+            "degauss": config["degauss"],
             "qeOutDir": workingFolder,
             "kPoints": kPoints,
             "elements": config["elements"],
