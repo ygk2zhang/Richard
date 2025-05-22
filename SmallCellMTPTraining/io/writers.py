@@ -368,7 +368,7 @@ def write_Cu100(fileName: str, jobProperties: dict):
     nz = int(np.ceil(jobProperties["boxDimensions"][2]))
     
     # Total atoms (4 per unit cell for FCC) 4 in the size corresponds to four layer meetings
-    atoms = fcc100('Cu', a=jobProperties["latticeParameter"], size=(nx, ny, 4), vacuum=12)
+    atoms = fcc100('Cu', a=jobProperties["latticeParameter"], size=(nx, ny, 4), vacuum=6)
     positions = atoms.get_positions()
     num_atoms = len(positions)
     # Create atom types (random distribution for alloys)
@@ -458,7 +458,7 @@ def write_Cu111(fileName: str, jobProperties: dict):
     nz = int(np.ceil(jobProperties["boxDimensions"][2]))
     layer=4 
     # Total atoms (4 per unit cell for FCC) 4 in the size corresponds to four layer meetings
-    atoms = fcc111('Cu', a=jobProperties["latticeParameter"], size=(nx, ny, layer), vacuum=12)
+    atoms = fcc111('Cu', a=jobProperties["latticeParameter"], size=(nx, ny, layer), vacuum=7)
     atoms.center()
     positions = atoms.get_positions()
     num_atoms = len(positions)
