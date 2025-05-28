@@ -65,9 +65,11 @@ def generateInitialDataset(inputFolder: str, outputFolder: str, config: dict):
                 [0, 0, 0],  # Atom 1 at origin
                 [0.5, 0.5, 0],
                 [0.5, 0, 0.5], 
-                [0, 0.5, 0.5]              
+                [0, 0.5, 0.5],
+                [0.5, 0.5, 0.5]
+
             ])*config["baseLatticeParameter"] * strain, #
-            "atomTypes": [0, 0, 0, 0],  # Both atoms of type 0 (e.g., Silicon)
+            "atomTypes": [0, 0, 0, 0, 1],  # Both atoms of type 0 (e.g., Silicon)
             "superCell": np.array([
                 [strain * config["baseLatticeParameter"], 0, 0],  # Strained lattice vectors
                 [0, strain * config["baseLatticeParameter"], 0],
