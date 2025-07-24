@@ -123,11 +123,11 @@ def performParallelMDRuns(
         }
 
         # Write MD input file and launch simulation
-        wr.write_Cu111(mdFile, mdProperties)
+        wr.writeMDInput(mdFile, mdProperties)
         subprocesses.append(
             subprocess.Popen(
                 [
-                    "/usr/bin/time",  # Track execution time
+                    "/global/home/hpc4997/MTP_Cu/Richard/time",  # Track execution time
                     "-o", timeFile,
                     "-f", "%e",  # Output format: elapsed time in seconds
                     "mpirun",

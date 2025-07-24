@@ -87,9 +87,9 @@ dimension        3
 boundary         p p p
 
 atom_style       atomic
-lattice          none 1.0 
+lattice          fcc 3.63
 box tilt large
-region           whole prism  0 {xdim} 0 {ydim} 0 {zdim} {xydim} 0.0 0.0  units box
+region           whole prism  0 {xdim} 0 {ydim} 0 {zdim} {xydim} 0.0 0.0  units lattice
 create_box       {num_elem}  whole
 
 

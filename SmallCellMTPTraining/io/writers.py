@@ -276,17 +276,25 @@ def writeMDInput(fileName: str, jobProperties: dict):
         atom_types = [0] * num_atoms  
     else:  # Multi-element alloy
         atom_types = []
-        for i in range(10):  # Try up to 10 times to get valid distribution
+        for i in range(100):  # Try up to 10 times to get valid distribution
             if len(np.unique(atom_types)) > 1:
                 break
 
             # Generate random concentrations
-            concentrations = np.random.uniform(0.01, 1, size=num_elem)
-            concentrations /= np.sum(concentrations)  # Normalize
+            concentration_Hydrogen = np.random.uniform(0.01, 0.2)
 
-            atom_types = np.random.choice(
-                np.arange(num_elem), size=num_atoms, p=concentrations
-            )
+            frac = 1/num_atoms                                                                                                                                                                                               
+            floorAtomCount = int(concentration_Hydrogen/frac)
+            ceilProbabilty = (concentration_Hydrogen - (floorAtomCount * frac))/frac
+            floorProbability = 1-ceilProbabilty
+
+            hcount = np.random.choice([floorAtomCount, floorAtomCount+1], p=[floorProbability,ceilProbabilty])
+
+            atom_types = [0]*num_atoms
+            hydro_indicies = np.random.choice(range(num_atoms),size=hcount,replace=False)
+            
+            for i in range(hcount):
+                atom_types[hydro_indicies[i]]=1
 
     # Create mass definitions
     mass_block = ""
@@ -323,6 +331,7 @@ def writeMDInput(fileName: str, jobProperties: dict):
         xdim=jobProperties["boxDimensions"][0],
         ydim=jobProperties["boxDimensions"][1],
         zdim=jobProperties["boxDimensions"][2],
+        xydim =0,
         num_elem=num_elem,
         mass_block=mass_block,
         create_atoms_block=create_atoms_block,
@@ -368,7 +377,7 @@ def write_Cu100(fileName: str, jobProperties: dict):
     nz = int(np.ceil(jobProperties["boxDimensions"][2]))
     
     # Total atoms (4 per unit cell for FCC) 4 in the size corresponds to four layer meetings
-    atoms = fcc100('Cu', a=jobProperties["latticeParameter"], size=(nx, ny, 4), vacuum=6)
+    atoms = fcc100('Cu', a=jobProperties["latticeParameter"], size=(nx, ny, 4), vacuum=5)
     positions = atoms.get_positions()
     num_atoms = len(positions)
     # Create atom types (random distribution for alloys)
@@ -458,7 +467,7 @@ def write_Cu111(fileName: str, jobProperties: dict):
     nz = int(np.ceil(jobProperties["boxDimensions"][2]))
     layer=4 
     # Total atoms (4 per unit cell for FCC) 4 in the size corresponds to four layer meetings
-    atoms = fcc111('Cu', a=jobProperties["latticeParameter"], size=(nx, ny, layer), vacuum=7)
+    atoms = fcc111('Cu', a=jobProperties["latticeParameter"], size=(nx, ny, layer), vacuum=6)
     atoms.center()
     positions = atoms.get_positions()
     num_atoms = len(positions)
