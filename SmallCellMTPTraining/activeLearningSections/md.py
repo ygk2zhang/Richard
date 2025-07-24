@@ -127,7 +127,7 @@ def performParallelMDRuns(
         subprocesses.append(
             subprocess.Popen(
                 [
-                    "/usr/bin/time",  # Track execution time
+                    "/global/home/hpc4997/MTP_Cu/Richard/time",  # Track execution time
                     "-o", timeFile,
                     "-f", "%e",  # Output format: elapsed time in seconds
                     "mpirun",
