@@ -58,7 +58,7 @@ def performParallelMDRuns(
     maxTempThreshold = max(6, int(maxCPUs / 4))  # At least 6, up to 1/4 of maxCPUs
 
     # Generate unique temperature/pressure combinations for each run
-    for j in range(int(maxCPUs/2)):
+    for j in range(maxCPUs):
         while attempts < max_attempts:
             attempts += 1
             # Random temperature within range (use max temp for first few runs)
@@ -96,11 +96,11 @@ def performParallelMDRuns(
         attempts = 0
 
     # Launch all MD runs in parallel
-    for j in range(int(maxCPUs)):
+    for j in range(maxCPUs):
         temperature = temperatures[j]
         pressure = pressures[j]
         identifier = identifiers[j]
-        identifier2 = identifiers[j]+"Richard"
+
         # Set up working directory for this run
         workingFolder = os.path.join(mdFolder, identifier)
         os.mkdir(workingFolder)
@@ -108,13 +108,8 @@ def performParallelMDRuns(
         outFile = os.path.join(workingFolder, identifier + ".out")  # MD output file
         timeFile = os.path.join(workingFolder, identifier + ".time")  # Timing file
 
-        # workingFolder2 = os.path.join(mdFolder, identifier2)
-        # os.mkdir(workingFolder2)
-        # mdFile2 = os.path.join(workingFolder2, identifier2 + ".in")  # MD input file
-        # outFile2 = os.path.join(workingFolder2, identifier2 + ".out")  # MD output file
-        # timeFile2 = os.path.join(workingFolder2, identifier2 + ".time")  # Timing file
         # Random lattice parameter variation (±5%)
-        # latticeParameter = config["baseLatticeParameter"] * random.uniform(0.95, 1.05)
+        latticeParameter = config["baseLatticeParameter"] * random.uniform(0.95, 1.05)
 
         # Prepare MD simulation properties
         mdProperties = {
@@ -128,11 +123,11 @@ def performParallelMDRuns(
         }
 
         # Write MD input file and launch simulation
-        wr.write_Cu111_H(mdFile, mdProperties)
+        wr.write_CuHbulk_ase2(mdFile, mdProperties)
         subprocesses.append(
             subprocess.Popen(
                 [
-                    "/usr/bin/time",  # Track execution time
+                    "/global/home/hpc4997/MTP_Cu/Richard/time",  # Track execution time
                     "-o", timeFile,
                     "-f", "%e",  # Output format: elapsed time in seconds
                     "mpirun",
@@ -148,26 +143,6 @@ def performParallelMDRuns(
             )
         )
 
-        # Write MD input file and launch simulation
-        # wr.write_Cu_vacancyH(mdFile2, mdProperties)
-        # subprocesses.append(
-        #     subprocess.Popen(
-        #      [
-        #            "/usr/bin/time",  # Track execution time
-        #            "-o", timeFile2,
-        #            "-f", "%e",  # Output format: elapsed time in seconds
-        #            "mpirun",
-        #            "-np", "1",  # Single MPI process
-        #            "--bind-to", "none",  # No CPU binding
-        #            config["lmpMPIFile"],  # LAMMPS MPI executable
-        #            "-in", mdFile2,  # Input file
-        #            "-log", outFile2,  # Log file
-        #        ],
-        #        stdout=subprocess.PIPE,
-        #        stderr=subprocess.PIPE,
-        #        cwd=workingFolder2,  # Run in working directory
-        #    )
-    #    )   
     # Wait for all runs to complete and check exit codes
     exitCodes = [p.wait() for p in subprocesses]
     for exitCode in exitCodes:
@@ -177,21 +152,33 @@ def performParallelMDRuns(
     # Process results
     preselectedIterationLogs = {}  # Store grades of selected configurations
     cpuTimesSpent = []  # Track computational cost
-    hasPreselected=False 
-    for j in range(int(maxCPUs)):
+
+    for j in range(maxCPUs):
         identifier = identifiers[j]
         workingFolder = os.path.join(mdFolder, identifier)
         preselectedFile = os.path.join(workingFolder, "preselected.cfg.0")  # Output file
+
+        # Parse execution time
+        timeFile = os.path.join(workingFolder, identifier + ".time")
+        cpuTimesSpent.append(pa.parseTimeFile(timeFile))
+
+        preselectedGrades = []  # Grades for this run's selected configs
+
+        # If preselected configurations exist, process them
         if os.path.exists(preselectedFile):
             hasPreselected = True
             with open(preselectedFile, "r") as src:
                 content = src.read()
+                # Extract all grade values using regex
+                preselectedGrades = list(
+                    map(float, re.findall(r"(?<=MV_grade\t)\d+.?\d*", content))
+                )
                 # Append to master file
                 with open(masterPreselectedFile, "a") as dest:
                     dest.write(content)
-        # Parse execution time
-        timeFile = os.path.join(workingFolder, identifier + ".time")
-        cpuTimesSpent.append(pa.parseTimeFile(timeFile))
+
+        # Store grades keyed by run identifier
+        preselectedIterationLogs[identifier] = preselectedGrades
 
     return (
         exitCodes,

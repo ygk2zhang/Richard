@@ -16,7 +16,7 @@ def trainMTP(
     maxCPUs = config["maxProcs"]
 
     subprocess.Popen(
-        "/usr/bin/time -o "
+        "/global/home/hpc4997/MTP_Cu/Richard/time -o "
         + timeFile
         + ' -f "%e" mpirun -np '
         + str(maxCPUs)
@@ -60,7 +60,7 @@ def selectDiffConfigs(
 
     subprocess.Popen(
         [
-            "/usr/bin/time",
+            "/global/home/hpc4997/MTP_Cu/Richard/time",
             "-o",
             timeFile,
             "-f",

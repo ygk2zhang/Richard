@@ -25,8 +25,89 @@ def checkProperties(propertiesToCheck: list, properties: dict):
         return ", ".join(missing)
     return None
 
+def writeQEInput(fileName: str, taskProperties: dict) -> str:
+    """
+    Generates a Quantum ESPRESSO (QE) input file.
+    
+    Required properties:
+        - atomPositions: List of atomic coordinates
+        - atomTypes: List of atom type indices
+        - superCell: 3x3 matrix of supercell vectors
+        - kPoints: k-point grid dimensions [k1, k2, k3]
+        - ecutwfc: Wavefunction cutoff energy
+        - ecutrho: Charge density cutoff energy  
+        - qeOutDir: Output directory
+        - elements: List of element symbols
+        - atomicWeights: List of atomic masses
+        - pseudopotentials: List of pseudopotential filenames
+        - pseudopotentialDirectory: Path to pseudopotentials
+    
+    Args:
+        fileName (str): Output file path
+        taskProperties (dict): Dictionary containing all required properties
+        
+    Returns:
+        str: The generated QE input file content
+    """
+    # Validate required properties
+    properties = props.qeProperties
+    if checkProperties(properties, taskProperties):
+        raise Exception(
+            "Properties missing: " + checkProperties(properties, taskProperties)
+        )
 
+    numAtoms = len(taskProperties["atomPositions"])
+    num_elem = len(taskProperties["elements"])
+    
+    # Format supercell vectors as strings
+    superCellStrings = [str(x)[1:-1] for x in taskProperties["superCell"]]
 
+    # Generate ATOMIC_SPECIES block
+    atomic_species_str = ""
+    for i in range(num_elem):
+        atomic_species_str += "{}  {} {}\n".format(
+            taskProperties["elements"][i],
+            taskProperties["atomicWeights"][i],
+            taskProperties["pseudopotentials"][i],
+        )
+
+    # Generate ATOMIC_POSITIONS block
+    atomPositionsString = []
+    for a in range(numAtoms):
+        atom_type_index = taskProperties["atomTypes"][a]
+        atomPositionsString.append(
+            " {} {} {} {} \n".format(
+                taskProperties["elements"][atom_type_index],
+                taskProperties["atomPositions"][a][0],
+                taskProperties["atomPositions"][a][1],
+                taskProperties["atomPositions"][a][2],
+            )
+        )
+    atomPositions = "".join(atomPositionsString)
+
+    # Format the complete QE input using template
+    newQEInput = templates.qeInputTemplate.format(
+        nat=numAtoms,
+        ntyp=num_elem,
+        ccc="\n  ".join(superCellStrings),
+        k1=taskProperties["kPoints"][0],
+        k2=taskProperties["kPoints"][1],
+        k3=taskProperties["kPoints"][2],
+        out=taskProperties["qeOutDir"],
+        ecut=taskProperties["ecutwfc"],
+        erho=taskProperties["ecutrho"],
+        smearing=taskProperties["smearing"],
+        degauss=taskProperties["degauss"],
+        atomic_species=atomic_species_str,
+        aaa=atomPositions,
+        pseudopotentialDirectory=taskProperties["pseudopotentialDirectory"],
+    )
+
+    # Write to file
+    with open(fileName, "w") as f:
+        f.write(newQEInput)
+
+    return newQEInput
 
 
 def writeQEJob(fileName: str, jobProperties: dict):
@@ -251,9 +332,162 @@ def writeMDInput(fileName: str, jobProperties: dict):
 
     return newMDInput
 
+def write_CuHbulk_ase2(fileName: str, jobProperties: dict):
+    from ase.build import bulk
+    from ase import Atoms
+    from ase.io import write
+    import numpy as np
+    import random
+    
+    """
+    Generates an MD simulation input file with a vacancy on Cu(111) surface
+    and a hydrogen atom in the vacancy site.
+    
+    Required properties:
+        - latticeParameter: Base lattice constant
+        - boxDimensions: Simulation box dimensions
+        - potFile: Path to potential file
+        - temperature: Simulation temperature
+        - pressure: Simulation pressure
+        - elements: List of element symbols (should include 'Cu' and 'H')
+        - atomicWeights: List of atomic masses (should include Cu and H masses)
+        - vacancy_position: (x,y) position for vacancy (optional, defaults to top site)
+        - H_height: Height above surface for hydrogen (optional, default 1.0 Å)
+    """
+
+    a = jobProperties["latticeParameter"]  # Cu lattice constant in Å
+    def create_cu_h_supercell(supercell_size=(1,1,1), h_percent=0.25):
+        """
+           Creates a Cu supercell with H in interstitial sites.
+
+        Args:
+        supercell_size (tuple): (nx, ny, nz) replication factors.
+        h_percent (float): Fraction of Cu to replace with H (0-0.25).
+    
+            Returns:
+        ase.Atoms: Structure with Cu and H atoms.
+        """
+        # 1. Create FCC Cu supercell
+        a_cu = a  # Å
+        cu = bulk('Cu', 'fcc', a=a_cu, cubic=True)
+        supercell = cu.repeat(supercell_size)
+        
+        # 2. Calculate number of Cu atoms to remove
+        n_cu = len([a for a in supercell if a.symbol == 'Cu'])
+        n_remove = int(n_cu * h_percent)
+        if n_remove == 0:
+            print("Warning: No Cu atoms removed (h_percent too small for supercell).")
+            return supercell
+        
+        # 3. Remove random Cu atoms
+        cu_indices = [i for i, atom in enumerate(supercell) if atom.symbol == 'Cu']
+        np.random.shuffle(cu_indices)
+        del supercell[cu_indices[:n_remove]]
+        
+        # 4. Generate all possible interstitial sites
+        def generate_interstitial_sites(cell, size):
+            """Generate tetrahedral and octahedral sites"""
+            sites = []
+            # Tetrahedral sites (8 per unit cell)
+            tetra = [
+                [0.25, 0.25, 0.25], [0.75, 0.75, 0.25],
+                [0.75, 0.25, 0.75], [0.25, 0.75, 0.75],
+                [0.75, 0.75, 0.75], [0.25, 0.25, 0.75],
+                [0.25, 0.75, 0.25], [0.75, 0.25, 0.25]
+            ]
+            # Octahedral sites (4 per unit cell)
+            octa = [
+                [0.5, 0.5, 0.5], [0.5, 0.0, 0.0],
+                [0.0, 0.5, 0.0], [0.0, 0.0, 0.5]
+            ]
+            
+            nx, ny, nz = size
+            for i, j, k in np.ndindex(nx, ny, nz):
+                for site in tetra + octa:
+                    frac_pos = [(site[0] + i)/nx, 
+                            (site[1] + j)/ny, 
+                            (site[2] + k)/nz]
+                    sites.append(np.dot(frac_pos, cell))
+            return sites
+        
+        # 5. Find valid H positions (>1.5 Å from any atom)
+        h_sites = generate_interstitial_sites(supercell.get_cell(), supercell_size)
+        valid_sites = []
+        atom_positions = supercell.get_positions()
+        
+        for site in h_sites:
+            if len(atom_positions) == 0:
+                valid_sites.append(site)
+            else:
+                distances = np.linalg.norm(atom_positions - site, axis=1)
+                if np.min(distances) > 1.5:  # Minimum distance threshold
+                    valid_sites.append(site)
+        
+        # 6. Add H atoms (CORRECTED SYNTAX)
+        np.random.shuffle(valid_sites)
+        for site in valid_sites[:n_remove]:
+            supercell += Atoms('H', positions=[site])  # Correct way to add atoms
+        
+        print(f"Supercell {supercell_size}: Removed {n_remove} Cu, added {min(n_remove, len(valid_sites))} H")
+        return supercell
+    
+    properties = props.mdProperties
+    if checkProperties(properties, jobProperties):
+        raise Exception("Properties missing: " + checkProperties(properties, jobProperties))
+        
+    # Create Cu bulk
+    nx, ny, nz = [int(np.ceil(d)) for d in jobProperties["boxDimensions"]]
+    num_elem = len(jobProperties["elements"])
+    
+    atoms=create_cu_h_supercell(supercell_size=(nx, ny, nz), h_percent=0.25)
+    
+    if atoms is not None:
+        # Get coordinates and symbols
+        symbols = np.array(atoms.get_chemical_symbols())
+        positions = atoms.get_positions()
+        
+        # Create species array (1=Cu, 2=H)
+        species = np.ones(len(symbols), dtype=int)
+        species[symbols == 'H'] = 2
+    
+      # Create mass definitions
+    mass_block = ""
+    for i in range(num_elem):
+        mass_block += "mass  {} {}\n".format(i + 1, jobProperties["atomicWeights"][i])
+
+    # Create atom positions (surface)
+    positions=atoms.get_positions()
+    create_atoms_block = ""
+    for i, (atom_type, pos) in enumerate(zip(species, positions)):
+        create_atoms_block += f"create_atoms {atom_type} single {pos[0]:.6f} {pos[1]:.6f} {pos[2]:.6f}\n"
+    
+    # get box dimensions from ASE structure 
+    cell = atoms.get_cell()
+    
+    xdim = cell[0,0]
+    ydim = cell[1,1]
+    zdim = cell[2,2]
+    xydim= cell [1,0]
+    # Format complete MD input
+    newMDInput = templates.mdInputTemplate.format(
+        base=jobProperties["latticeParameter"],
+        ttt=jobProperties["temperature"],
+        ppp=jobProperties["pressure"],
+        pot=jobProperties["potFile"],
+        xdim=xdim,
+        ydim=ydim,
+        zdim=zdim, 
+        xydim=xydim, 
+        num_elem=num_elem,
+        mass_block=mass_block,
+        create_atoms_block=create_atoms_block,
+    )
+    with open(fileName, "w") as f:
+        f.write(newMDInput)  
+        
 
 
-def write_Cu_vacancyH(fileName: str, jobProperties: dict):
+def write_Cu_surf_vacancyH(fileName: str, jobProperties: dict):
     from ase.build import fcc111, add_adsorbate
     from ase.io import write
     import numpy as np
@@ -280,26 +514,84 @@ def write_Cu_vacancyH(fileName: str, jobProperties: dict):
         
     # Create Cu(111) surface
     nx, ny, nz = [int(np.ceil(d)) for d in jobProperties["boxDimensions"]]
-    layers=4
-    atoms = fcc111('Cu', a=jobProperties["latticeParameter"], size=(nx, ny, layers), vacuum=8)
-    atoms.center()
-    # Find and remove surface atom to create vacancy
-    vacancy_pos = jobProperties.get("vacancy_position", (0, 0))
-    z_max = max(atoms.get_positions()[:,2])
-    surface_atoms = [a.index for a in atoms if a.z > z_max - 2.0]  # Find surface atoms
     num_elem = len(jobProperties["elements"])
-    # Find atom closest to vacancy position
-    distances = [np.linalg.norm(a.position[:2] - np.array(vacancy_pos)) for a in atoms if a.index in surface_atoms]
-    vacancy_index = surface_atoms[np.argmin(distances)]
-    vacancy_site = atoms[vacancy_index].position.copy()
-    del atoms[vacancy_index]
-    
-    # Add hydrogen atom in the vacancy site
-    h_height = jobProperties.get("H_height", 1.0)  # Slightly lower for vacancy site
-    add_adsorbate(atoms, 'H', height=h_height, position=vacancy_pos)
+    layers=4
+    from ase.build import fcc111, add_adsorbate
+    import random
+    import numpy as np
+    from ase.io import write
+    from scipy.spatial import KDTree
+
+    # Create the Cu surface
+    atoms = fcc111('Cu', a=3.63, size=(nx, ny, 4), vacuum=8)
+    atoms.center()
+
+    # Calculate 10% of total atoms
+    total_atoms = len(atoms)
+    n_hydrogens = max(1, int(round(0.1 * total_atoms)))
+
+    # Identify surface atoms
+    z_max = max(atoms.get_positions()[:, 2])
+    surface_atoms = [a.index for a in atoms if a.z > z_max - 2.0]
+    surface_positions = np.array([atoms[i].position[:2] for i in surface_atoms])
+
+    # Create KDTree for efficient nearest-neighbor checks
+    kdtree = KDTree(surface_positions)
+
+    # Parameters
+    min_h_distance = 1.5  # Minimum distance between H atoms in Å
+    max_attempts = 100    # Max attempts to place each H atom
+
+    added_positions = []
+    successful_h = 0
+
+    while successful_h < n_hydrogens and len(surface_atoms) > 0:
+        attempts = 0
+        placed = False
+        
+        while attempts < max_attempts and not placed:
+            # Random vacancy position
+            vacancy_pos = np.array([random.uniform(0, atoms.cell[0,0]),
+                                random.uniform(0, atoms.cell[1,1])])
+            
+            # Check distance to existing H atoms
+            if len(added_positions) > 0:
+                distances = np.linalg.norm(np.array(added_positions) - vacancy_pos, axis=1)
+                if np.any(distances < min_h_distance):
+                    attempts += 1
+                    continue
+            
+            # Find nearest surface atom
+            dist, idx = kdtree.query(vacancy_pos)
+            vacancy_index = surface_atoms[idx]
+            
+            # Verify atom exists and remove it
+            if vacancy_index in [a.index for a in atoms]:
+                del atoms[vacancy_index]
+                # Remove from surface atoms list
+                surface_atoms.pop(idx)
+                surface_positions = np.delete(surface_positions, idx, axis=0)
+                kdtree = KDTree(surface_positions)
+                
+                # Add hydrogen with randomized parameters
+                h_height = random.uniform(0.8, 1.5)  # Wider height range
+                add_adsorbate(atoms, 'H', height=h_height, position=vacancy_pos)
+                added_positions.append(vacancy_pos)
+                successful_h += 1
+                placed = True
+            else:
+                attempts += 1
+
     
     # Prepare atom types (0 for Cu, 1 for H)
-    atom_types = [0] * (len(atoms) - 1) + [1]
+    if atoms is not None:
+        # Get coordinates and symbols
+        symbols = np.array(atoms.get_chemical_symbols())
+        positions = atoms.get_positions()
+        
+        # Create species array (1=Cu, 2=H)
+        species = np.ones(len(symbols), dtype=int)
+        species[symbols == 'H'] = 2
     
       # Create mass definitions
     mass_block = ""
@@ -309,9 +601,8 @@ def write_Cu_vacancyH(fileName: str, jobProperties: dict):
     # Create atom positions (surface)
     positions=atoms.get_positions()
     create_atoms_block = ""
-    for i, pos in enumerate(positions):
-        atom_type = atom_types[i] + 1  # LAMMPS uses 1-based
-        create_atoms_block += "create_atoms {} single {} {} {}\n".format(atom_type, pos[0], pos[1], pos[2])
+    for i, (atom_type, pos) in enumerate(zip(species, positions)):
+        create_atoms_block += f"create_atoms {atom_type} single {pos[0]:.6f} {pos[1]:.6f} {pos[2]:.6f}\n"
     
     # get box dimensions from ASE structure 
     cell = atoms.get_cell()
@@ -333,7 +624,7 @@ def write_Cu_vacancyH(fileName: str, jobProperties: dict):
         num_elem=num_elem,
         mass_block=mass_block,
         create_atoms_block=create_atoms_block,
-    
+    )
     with open(fileName, "w") as f:
         f.write(newMDInput)  
         
@@ -365,9 +656,10 @@ def write_Cu111_H(fileName: str, jobProperties: dict):
     nx, ny, nz = [int(np.ceil(d)) for d in jobProperties["boxDimensions"]]
     layers =4
     atoms = fcc111('Cu', a=jobProperties["latticeParameter"], size=(nx, ny, layers), vacuum=8)
+    atoms.center()
     num_elem = len(jobProperties["elements"])
     # Add hydrogen atom
-    h_pos = jobProperties.get("H_position", (0, 0))  # Default top site
+    h_pos = jobProperties.get("H_position", (1.5, 0.37))  # Default top site
     h_height = jobProperties.get("H_height", 1.5)    # Default height 1.5 Å
     add_adsorbate(atoms, 'H', height=h_height, position=h_pos)
     
